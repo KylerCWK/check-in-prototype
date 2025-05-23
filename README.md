@@ -1,2 +1,2 @@
 # Check in prototype
-Prototype
+Prototype for QR code project
