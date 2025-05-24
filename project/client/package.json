@@ -18,5 +18,8 @@
     "lint": "eslint . --ext .js,.vue",
     "lint:fix": "eslint . --ext .js,.vue --fix",
     "format": "prettier --write ."
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
   }
 }
