@@ -1,9 +1,9 @@
 <template>
     <div>
         <h1>QR Code Generator</h1>
-        <input v-model="inputValue" placeholder="Enter text or URL" @input="generateQRCode" />
+        <input v-model="inputValue" class="input-field" placeholder="Enter text or URL" @input="generateQRCode" />
         <canvas ref="qrcode"></canvas>
-        <button @click="downloadQRCode">Download QR Code</button>
+        <button class="btn_primary" @click="downloadQRCode">Download QR Code</button>
     </div>
 </template>
 
@@ -55,12 +55,6 @@ export default {
 </script>
 
 <style scoped>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #f7f7f7;
-}
-
 div {
     display: flex;
     flex-direction: column;
@@ -81,54 +75,7 @@ h1 {
     margin-bottom: 1rem;
 }
 
-input {
-    margin-bottom: 20px;
-    padding: 10px;
-    width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: border-color 0.3s ease;
-}
-
-input:focus {
-    border-color: #42b983;
-    outline: none;
-}
-
 canvas {
     margin-top: 10px;
-}
-
-button {
-  background-color: #42b983;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  margin-top: 10px;
-  transition: background-color 0.3s ease;
-}
-
-button:hover {
-  background-color: #369e6f;
-}
-button {
-  background-color: #42b983;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  margin-top: 10px;
-  transition: background-color 0.3s ease;
-}
-
-button:hover {
-  background-color: #369e6f;
 }
 </style>
