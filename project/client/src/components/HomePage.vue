@@ -40,7 +40,7 @@ export default {
 
 <style scoped>
 .nav-bar {
-  background: linear-gradient(90deg, #42b983 0%, #369e6f 100%);
+  background: linear-gradient(90deg, #73bfb8 0%, #239562 100%);
   padding: 0.5rem 2rem;
   color: white;
   display: flex;

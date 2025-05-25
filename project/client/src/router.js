@@ -6,6 +6,7 @@ import SignUpPage from './components/SignUpPage.vue';
 import AboutPage from './components/AboutPage.vue';
 import PricingPage from './components/PricingPage.vue';
 import APIPage from './components/APIPage.vue';
+import AdminDashboard from './components/AdminDashboard.vue';
 
 const routes = [
   { path: '/', component: HomePage },
@@ -15,6 +16,7 @@ const routes = [
   { path: '/about', component: AboutPage },
   { path: '/pricing', component: PricingPage },
   { path: '/api', component: APIPage },
+  { path: '/admin', component: AdminDashboard },
   { path: '/:catchAll(.*)', redirect: '/' }
 ];
 
