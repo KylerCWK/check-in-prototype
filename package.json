@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }

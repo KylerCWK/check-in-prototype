@@ -11,7 +11,7 @@
 
     <div class="dashboard-section quad-section">
       <!-- Orders Quad -->
-      <div class="dashboard-quad">
+      <div class="dashboard-quad quad-grid">
         <div class="quad-card">
           <h3>Total Orders</h3>
           <div class="graph-placeholder">[Orders Graph]</div>
@@ -130,10 +130,10 @@ export default {
   font-size: 1.1rem;
 }
 .dashboard-quad {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
   gap: 1.5rem;
-  flex-wrap: wrap;
-  justify-content: space-between;
 }
 .quad-card {
   flex: 1 1 200px;
@@ -182,7 +182,8 @@ export default {
 }
 @media (max-width: 900px) {
   .dashboard-quad {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    grid-template-rows: unset;
     gap: 1rem;
   }
   .admin-dashboard {
