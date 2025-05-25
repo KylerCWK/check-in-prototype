@@ -39,3 +39,12 @@ body {
     border-color: #42b983;
     outline: none;
 }
+
+.nav-bar {
+  background-color: #42b983;
+  padding: 10px 20px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
