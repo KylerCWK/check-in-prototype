@@ -3,44 +3,52 @@
         <h1>QR Code Generator</h1>
         <input v-model="inputValue" placeholder="Enter text or URL" @input="generateQRCode" />
         <canvas ref="qrcode"></canvas>
+        <button @click="downloadQRCode">Download QR Code</button>
     </div>
 </template>
 
 <script>
 import QRCode from "qrcode";
 
-export default{
+export default {
     name: 'QRCodeGenerator',
-    data(){
-        return{
+    data() {
+        return {
             inputValue: ''
         };
     },
 
-    methods:{
-        generateQRCode(){
+    methods: {
+        generateQRCode() {
             QRCode.toCanvas(
                 this.$refs.qrcode,
                 this.inputValue || ' ', //blank if empty
                 {
                     width: 128,
-                    color:{
+                    color: {
                         dark: "#000000",
-                        light: "#ffffff"
+                        light: "#ffffff",
                     },
                     errorCorrectionLevel: "H"
                 },
 
-                function (error){
-                    if(error){
+                function (error) {
+                    if (error) {
                         console.error(error);
                     }
                 }
             );
+        },
+        downloadQRCode() {
+            const canvas = this.$refs.qrcode;
+            const link = document.createElement("a");
+            link.download = "qrcode.png";
+            link.href = canvas.toDataURL("image/png");
+            link.click();
         }
     },
 
-    mounted(){
+    mounted() {
         this.generateQRCode();
     }
 };
@@ -92,5 +100,35 @@ input:focus {
 canvas {
     margin-top: 10px;
 }
-</style>
 
+button {
+  background-color: #42b983;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #369e6f;
+}
+button {
+  background-color: #42b983;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #369e6f;
+}
+</style>
