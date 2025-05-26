@@ -17,7 +17,7 @@ app.use((req, res, next) => {
 });
 
 
-// Connect to MongoDB using Mongoose
+// Check if required environment variables are set
 if (!process.env.MONGO_URI) {
   console.error('MONGO_URI is not defined in environment variables');
   process.exit(1);
