@@ -4,43 +4,35 @@
     <div class="dashboard-section">
       <!-- Total Sales Graph Placeholder -->
       <div class="dashboard-card graph-card">
-        <h2>Total Sales (Last 7 Days)</h2>
-        <div class="graph-placeholder">[Total Sales Graph]</div>
+        <h2>Total Subscriptions (Last 7 Days)</h2>
+        <div class="graph-placeholder">[Total Subscriptions Graph]</div>
       </div>
     </div>
 
-    <div class="dashboard-section quad-section">
-      <!-- Orders Quad -->
-      <div class="dashboard-quad quad-grid">
-        <div class="quad-card">
+    <div class="dashboard-section">
+      <!-- Paying vs Non-Paying Customers Pie Chart -->
+      <div class="dashboard-card graph-card">
+        <h2>Paying vs Non-Paying Customers</h2>
+        <div class="graph-placeholder">[Paying vs Non-Paying Pie Chart]</div>
+      </div>
+    </div>
+
+    <div class="dashboard-section pair-section">
+      <!-- Orders and Revenue Pair -->
+      <div class="dashboard-pair">
+        <div class="pair-card">
           <h3>Total Orders</h3>
           <div class="graph-placeholder">[Orders Graph]</div>
-          <div class="quad-stats">
+          <div class="pair-stats">
             <span class="stat-label">Number:</span> <span class="stat-value">--</span>
             <span class="stat-label">% Change:</span> <span class="stat-value">--%</span>
           </div>
         </div>
-        <div class="quad-card">
-          <h3>Completed</h3>
-          <div class="graph-placeholder">[Completed Graph]</div>
-          <div class="quad-stats">
-            <span class="stat-label">Number:</span> <span class="stat-value">--</span>
-            <span class="stat-label">%:</span> <span class="stat-value">--%</span>
-          </div>
-        </div>
-        <div class="quad-card">
-          <h3>Pending Payment</h3>
-          <div class="graph-placeholder">[Pending Graph]</div>
-          <div class="quad-stats">
-            <span class="stat-label">Number:</span> <span class="stat-value">--</span>
-            <span class="stat-label">%:</span> <span class="stat-value">--%</span>
-          </div>
-        </div>
-        <div class="quad-card">
-          <h3>Percentage</h3>
-          <div class="graph-placeholder">[Percentage Graph]</div>
-          <div class="quad-stats">
-            <span class="stat-label">%:</span> <span class="stat-value">--%</span>
+        <div class="pair-card">
+          <h3>Total Revenue</h3>
+          <div class="graph-placeholder">[Revenue Graph]</div>
+          <div class="pair-stats">
+            <span class="stat-label">Amount:</span> <span class="stat-value">$--</span>
           </div>
         </div>
       </div>
@@ -68,22 +60,6 @@
           <input type="date" placeholder="Expiration Date" class="input-field" />
           <button class="btn_primary" type="submit">Add Coupon</button>
         </form>
-      </div>
-    </div>
-
-    <div class="dashboard-section">
-      <!-- Paying vs Non-Paying Customers Pie Chart -->
-      <div class="dashboard-card graph-card">
-        <h2>Paying vs Non-Paying Customers (Last 7 Days)</h2>
-        <div class="graph-placeholder">[Paying vs Non-Paying Pie Chart]</div>
-      </div>
-    </div>
-
-    <div class="dashboard-section">
-      <!-- Returning Customer Rate -->
-      <div class="dashboard-card graph-card">
-        <h2>Returning Customer Rate (Last 7 Days)</h2>
-        <div class="graph-placeholder">[Returning Customer Rate Graph]</div>
       </div>
     </div>
   </div>
@@ -129,14 +105,17 @@ export default {
   color: #aaa;
   font-size: 1.1rem;
 }
-.dashboard-quad {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 1.5rem;
+.pair-section {
+  margin-bottom: 2rem;
 }
-.quad-card {
-  flex: 1 1 200px;
+.dashboard-pair {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.pair-card {
+  flex: 1 1 300px;
   background: #f8f9fa;
   border-radius: 10px;
   padding: 1rem 1.2rem;
@@ -147,7 +126,7 @@ export default {
   flex-direction: column;
   align-items: flex-start;
 }
-.quad-stats {
+.pair-stats {
   margin-top: 0.7rem;
   display: flex;
   flex-direction: column;
@@ -181,9 +160,8 @@ export default {
   min-width: 180px;
 }
 @media (max-width: 900px) {
-  .dashboard-quad {
-    grid-template-columns: 1fr;
-    grid-template-rows: unset;
+  .dashboard-pair {
+    flex-direction: column;
     gap: 1rem;
   }
   .admin-dashboard {

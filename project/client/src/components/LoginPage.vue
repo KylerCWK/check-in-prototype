@@ -1,5 +1,151 @@
 <template>
-    <div class="login-container">
-        <h1>Login test</h1>
+  <div>
+    <NavBar />
+    <div class="login-section">
+      <div class="login-container">
+        <div class="login-header-row">
+          <h1 class="login-title">Login</h1>
+          <span class="or-create"
+            >or
+            <router-link to="/signup" class="create-account-link">Create an Account</router-link
+          ></span>
+        </div>
+        <form class="login-form" @submit.prevent="handleLogin">
+          <label for="username" class="login-label">Username or Email</label>
+          <input id="username" type="text" class="input-field" placeholder="" v-model="username" />
+
+          <label for="password" class="login-label">Password</label>
+          <input id="password" type="password" class="input-field" placeholder="" v-model="password" />
+
+          <div class="remember-row">
+            <input id="remember" type="checkbox" v-model="remember" />
+            <label for="remember">Remember me</label>
+          </div>
+
+          <button class="btn_primary login-btn" type="submit">Login</button>
+        </form>
+        <router-link to="/reset-password" class="lost-password-link">Lost your password?</router-link>
+      </div>
     </div>
+  </div>
 </template>
+
+<script>
+import NavBar from './NavBar.vue';
+export default {
+  name: 'LoginPage',
+  components: { NavBar },
+  data() {
+    return {
+      username: '',
+      password: '',
+      remember: false,
+    };
+  },
+  methods: {
+    handleLogin() {
+      // Placeholder for login logic
+      // On successful login, redirect to home or dashboard
+      this.$router.push('/');
+    },
+  },
+};
+</script>
+
+<style scoped>
+.login-section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f7f7;
+}
+.login-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.09);
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 520px;
+  max-width: 620px;
+  margin: 2rem;
+}
+.login-header-row {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+.login-title {
+  margin-bottom: 0;
+  color: #2c3e50;
+  font-size: 2rem;
+  font-weight: 600;
+}
+.or-create {
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+  color: #444;
+  margin-left: 1.2rem;
+  white-space: nowrap;
+}
+.create-account-link {
+  color: #42b983;
+  text-decoration: underline;
+  margin-left: 0.3rem;
+  transition: color 0.2s;
+}
+.create-account-link:hover {
+  color: #369e6f;
+}
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.login-label {
+  font-size: 1rem;
+  color: #444;
+  margin-bottom: 0.2rem;
+}
+.input-field {
+  padding: 0.7rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #f8f9fa;
+  margin-bottom: 0.2rem;
+}
+.input-field:focus {
+  border-color: #42b983;
+  outline: none;
+}
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.login-btn {
+  margin-top: 0.5rem;
+  width: 100%;
+}
+.lost-password-link {
+  margin-top: 1.5rem;
+  color: #888;
+  font-size: 0.98rem;
+  text-decoration: underline;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  transition: color 0.2s;
+}
+.lost-password-link:hover {
+  color: #f8143e;
+}
+</style>
