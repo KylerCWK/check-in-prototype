@@ -2,7 +2,7 @@
   <nav class="nav-bar">
     <div class="nav-container">
       <router-link to="/" class="nav-logo">
-        <img src="/src/assets/logo_icon.png" alt="QRBook Logo" class="logo-img" />
+        <img src="/src/assets/logo_icon2.png" alt="QRBook Logo" class="logo-img" />
         <div class="brand-block">
           <span class="brand-title">QRBook</span>
           <span class="brand-tagline">Connect with Every Page</span>
@@ -27,7 +27,7 @@ export default {
 
 <style scoped>
 .nav-bar {
-  background: linear-gradient(90deg, #73bfb8 0%, #3da5d9 100%);
+  background: linear-gradient(90deg, #2364AA 0%, #3da5d9 100%);
   padding: 0.5rem 2rem;
   color: white;
   display: flex;
@@ -64,7 +64,7 @@ export default {
 .brand-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #f8143e;
+  color: #fec601;
   letter-spacing: 1px;
   line-height: 1.1;
 }

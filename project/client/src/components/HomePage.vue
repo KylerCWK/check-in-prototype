@@ -4,7 +4,7 @@
     <div class="home-container">
       <h1>Welcome to the QR Code Check-In Prototype</h1>
       <p>
-        This platform streamlines clock-in/clock-out processes using QR code scanning, with features like biometric verification, real-time analytics, offline support, customizable reports, and API integrations.
+        This is a prototype application for QR Code book check in and check-out with AI  recommendations and API integration.
       </p>
       <router-link to="/qrcode">
         <button class="btn_primary">Go to QR Code</button>
