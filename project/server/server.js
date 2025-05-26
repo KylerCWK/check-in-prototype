@@ -10,9 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI);
-  mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('Connected to MongoDB'))
+mongoose.connect(process.env.MONGO_URI, { dbName: 'qrlibrary' })
+  .then(() => console.log('Connected to MongoDB (qrlibrary)'))
   .catch((err) => console.error(err));
 
 app.get('/', (req, res) => res.send('Hello from backend!'));
