@@ -7,9 +7,10 @@
           <h1 class="login-title">Login</h1>
           <span class="or-create"
             >or
-            <router-link to="/signup" class="create-account-link">Create an Account</router-link
+            <router-link to="/register" class="create-account-link">Create an Account</router-link
           ></span>
         </div>
+        <div class="oauth-placeholder">[OAuth buttons placeholder]</div>
         <form class="login-form" @submit.prevent="handleLogin">
           <label for="username" class="login-label">Username or Email</label>
           <input id="username" type="text" class="input-field" placeholder="" v-model="username" />
@@ -102,6 +103,20 @@ export default {
 .create-account-link:hover {
   color: #369e6f;
 }
+
+.oauth-placeholder {
+  width: 100%;
+  height: 120px;
+  background: repeating-linear-gradient(135deg, #e0e0e0, #e0e0e0 10px, #f7f7f7 10px, #f7f7f7 20px);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  font-size: 1.1rem;
+}
+
 .login-form {
   width: 100%;
   display: flex;
