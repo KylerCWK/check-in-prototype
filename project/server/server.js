@@ -2,13 +2,21 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const User = require('./src/models/User');
+require('dotenv').config();
+
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/registration_app');
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((err) => console.error(err));
+
+app.get('/', (req, res) => res.send('Hello from backend!'));
+const PORT = 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
@@ -29,4 +37,4 @@ app.post('/register', async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log('Server running on http://localhost:3000'));
+//app.listen(3000, () => console.log('Server running on http://localhost:3000'));
