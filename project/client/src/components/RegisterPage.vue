@@ -33,10 +33,34 @@
 </template>
 
 <script>
-import NavBar from './NavBar.vue';
+import axios from 'axios';
+
 export default {
-  name: 'SignUpPage',
-  components: { NavBar },
+  data() {
+    return {
+      username: '',
+      email: '',
+      password: '',
+      message: ''
+    };
+  },
+  methods: {
+    async registerUser() {
+      try {
+        const response = await axios.post('http://localhost:5000/api/auth/register', {
+          username: this.username,
+          email: this.email,
+          password: this.password
+        });
+
+        this.message = response.data.message;
+        console.log('Signup success:', response.data);
+      } catch (error) {
+        console.error('Signup error:', error.response.data);
+        this.message = error.response.data.error || 'Signup failed';
+      }
+    }
+  }
 };
 </script>
 

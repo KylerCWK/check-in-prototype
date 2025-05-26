@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import HomePage from './components/HomePage.vue';
 import QRCodeGenerator from './components/QRCodeGenerator.vue';
 import LoginPage from './components/LoginPage.vue';
-import SignUpPage from './components/SignUpPage.vue';
+import RegisterPage from './components/RegisterPage.vue';
 import AboutPage from './components/AboutPage.vue';
 import PricingPage from './components/PricingPage.vue';
 import APIPage from './components/APIPage.vue';
@@ -12,7 +12,7 @@ const routes = [
   { path: '/', component: HomePage },
   { path: '/qrcode', component: QRCodeGenerator },
   { path: '/login', component: LoginPage },
-  { path: '/signup', component: SignUpPage },
+  { path: '/register', component: RegisterPage },
   { path: '/about', component: AboutPage },
   { path: '/pricing', component: PricingPage },
   { path: '/api', component: APIPage },

@@ -9,7 +9,7 @@
         <router-link to="/about" class="nav-link">About</router-link>
         <router-link to="/pricing" class="nav-link">Pricing</router-link>
         <router-link to="/api" class="nav-link">API</router-link>
-        <router-link to="/signup" class="nav-link">Sign Up</router-link>
+        <router-link to="/register" class="nav-link">Sign Up</router-link>
         <router-link to="/login" class="nav-link">Login</router-link>
       </div>
     </div>
