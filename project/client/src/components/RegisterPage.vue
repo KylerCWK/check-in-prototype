@@ -33,9 +33,11 @@
 </template>
 
 <script>
+import NavBar from './NavBar.vue';
 import axios from 'axios';
 
 export default {
+  components: { NavBar },
   data() {
     return {
       username: '',

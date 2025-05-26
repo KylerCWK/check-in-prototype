@@ -2,8 +2,11 @@
   <nav class="nav-bar">
     <div class="nav-container">
       <router-link to="/" class="nav-logo">
-        <div class="logo-placeholder">LOGO</div>
-        <span class="brand-title">QR Code Check-In</span>
+        <img src="/src/assets/logo_icon.png" alt="QRBook Logo" class="logo-img" />
+        <div class="brand-block">
+          <span class="brand-title">QRBook</span>
+          <span class="brand-tagline">Connect with Every Page</span>
+        </div>
       </router-link>
       <div class="nav-links">
         <router-link to="/about" class="nav-link">About</router-link>
@@ -24,7 +27,7 @@ export default {
 
 <style scoped>
 .nav-bar {
-  background: linear-gradient(90deg, #73bfb8 0%, #239562 100%);
+  background: linear-gradient(90deg, #73bfb8 0%, #3da5d9 100%);
   padding: 0.5rem 2rem;
   color: white;
   display: flex;
@@ -45,20 +48,32 @@ export default {
   text-decoration: none;
   color: inherit;
 }
-.logo-placeholder {
-  background: #fff;
-  color: #42b983;
-  font-weight: bold;
-  border-radius: 8px;
-  padding: 0.4rem 1rem;
-  margin-right: 1rem;
-  font-size: 1.2rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+.logo-img {
+  height: 48px;
+  width: auto;
+  margin-right: 1.2rem;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+.brand-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 .brand-title {
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f8143e;
   letter-spacing: 1px;
+  line-height: 1.1;
+}
+.brand-tagline {
+  font-size: 1.05rem;
+  color: #e0e0e0;
+  margin-top: 0.1rem;
+  font-weight: 400;
+  letter-spacing: 0.2px;
 }
 .nav-links {
   display: flex;
@@ -88,6 +103,12 @@ export default {
     flex-wrap: wrap;
     gap: 0.7rem;
   }
+  .brand-title {
+    font-size: 1.3rem;
+  }
+  .brand-tagline {
+    font-size: 0.95rem;
+  }
 }
 @media (max-width: 600px) {
   .nav-bar {
@@ -104,13 +125,15 @@ export default {
     align-items: flex-start;
     gap: 0.5rem;
   }
-  .logo-placeholder {
-    font-size: 1rem;
-    padding: 0.3rem 0.7rem;
-    margin-right: 0.5rem;
+  .logo-img {
+    height: 36px;
+    margin-right: 0.7rem;
   }
   .brand-title {
-    font-size: 1rem;
+    font-size: 1.1rem;
+  }
+  .brand-tagline {
+    font-size: 0.85rem;
   }
 }
 </style>
