@@ -18,7 +18,8 @@ mongoose.connect(process.env.MONGO_URI, { dbName: 'qrlibrary' })
   .catch((err) => console.error(err));
 
 app.get('/', (req, res) => res.send('Hello from backend!'));
-const PORT = 5000;
+
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // Mount auth routes from routes/auth.js for /api/auth endpoints
