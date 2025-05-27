@@ -23,14 +23,27 @@
           </div>
 
           <label for="confirmPassword" class="signup-label">Confirm Password</label>
-          <input id="confirmPassword" type="password" class="input-field" v-model="confirmPassword" required />
-          
+          <div class="password-field-wrapper">
+            <input :type="showConfirmPassword ? 'text' : 'password'" id="confirmPassword" class="input-field" v-model="confirmPassword" required />
+            <button type="button" class="show-password-btn" @click="showConfirmPassword = !showConfirmPassword">
+              {{ showConfirmPassword ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+
+          <div v-if="!passwordsMatch && confirmPassword" class="password-warning">
+            Passwords do not match.
+          </div>
+
           <div class="terms-row">
             <input id="terms" type="checkbox" v-model="acceptedTerms" required />
             <label for="terms">I accept the <a href="#" target="_blank">terms and conditions</a></label>
           </div>
 
-          <button class="btn_primary signup-btn" type="submit">Register</button>
+          <button class="btn_primary signup-btn" type="submit" :disabled="!canRegister">
+            {{ isSubmitting ? 'Registering...' : 'Register' }}
+          </button>
+          <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+          <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
         </form>
       </div>
     </div>
@@ -39,6 +52,7 @@
 
 <script>
 import NavBar from './NavBar.vue';
+import axios from 'axios';
 export default {
   name: 'SignUpPage',
   components: { NavBar },
@@ -50,11 +64,55 @@ export default {
       acceptedTerms: false,
       showPassword: false,
       showConfirmPassword: false,
+      errorMessage: '',
+      successMessage: '',
+      isSubmitting: false,
     };
   },
+  computed: {
+    passwordsMatch() {
+      return this.password === this.confirmPassword;
+    },
+    canRegister() {
+      return (
+        this.email &&
+        this.password &&
+        this.confirmPassword &&
+        this.acceptedTerms &&
+        this.passwordsMatch &&
+        !this.isSubmitting
+      );
+    },
+  },
   methods: {
-    handleRegister() {
-      // Registration logic here
+    async handleRegister() {
+      this.errorMessage = '';
+      this.successMessage = '';
+      if (!this.passwordsMatch) {
+        this.errorMessage = "Passwords do not match.";
+        return;
+      }
+      if (!this.acceptedTerms) {
+        this.errorMessage = "You must accept the terms and conditions.";
+        return;
+      }
+      this.isSubmitting = true;
+      try {
+        const response = await axios.post('/api/auth/register', {
+          email: this.email,
+          password: this.password,
+          confirmPassword: this.confirmPassword,
+        });
+        this.successMessage = response.data.message;
+        this.email = '';
+        this.password = '';
+        this.confirmPassword = '';
+        this.acceptedTerms = false;
+      } catch (err) {
+        this.errorMessage = err.response?.data?.message || 'Registration failed.';
+      } finally {
+        this.isSubmitting = false;
+      }
     },
   },
 };
@@ -76,8 +134,8 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 520px;
-  max-width: 620px;
+  min-width: 620px; 
+  max-width: 720px;
   margin: 2rem;
 }
 .signup-header-row {
@@ -190,5 +248,22 @@ export default {
 .signup-btn {
   margin-top: 0.5rem;
   width: 100%;
+}
+.password-warning {
+  color: #f8143e;
+  font-size: 0.98rem;
+  margin-bottom: 0.5rem;
+  margin-top: -0.5rem;
+  text-align: left;
+}
+.error-message {
+  color: #f8143e;
+  margin-top: 1rem;
+  text-align: center;
+}
+.success-message {
+  color: #42b983;
+  margin-top: 1rem;
+  text-align: center;
 }
 </style>

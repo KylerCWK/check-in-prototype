@@ -21,7 +21,10 @@ const loginSchema = Joi.object({
 });
 const registerSchema = Joi.object({
   email: Joi.string().email().required(),
-  password: Joi.string().min(6).required()
+  password: Joi.string().min(6).required(),
+  confirmPassword: Joi.string().valid(Joi.ref('password')).required().messages({
+    'any.only': 'Passwords do not match'
+  })
 });
 
 // Login route
@@ -67,7 +70,9 @@ router.post('/login', authLimiter, async (req, res) => {
 // Register route
 router.post('/register', authLimiter, async (req, res) => {
   const { error } = registerSchema.validate(req.body);
-  if (error) return res.status(400).json({ message: error.details[0].message });
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
   const { email, password } = req.body;
   try {
     const existing = await User.findOne({ email });
