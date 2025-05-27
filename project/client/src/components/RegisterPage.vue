@@ -15,11 +15,16 @@
           <input id="email" type="email" class="input-field" v-model="email" required />
 
           <label for="password" class="signup-label">Password</label>
-          <input id="password" type="password" class="input-field" v-model="password" required />
+          <div class="password-field-wrapper">
+            <input :type="showPassword ? 'text' : 'password'" id="password" class="input-field" v-model="password" required />
+            <button type="button" class="show-password-btn" @click="showPassword = !showPassword">
+              {{ showPassword ? 'Hide' : 'Show' }}
+            </button>
+          </div>
 
           <label for="confirmPassword" class="signup-label">Confirm Password</label>
           <input id="confirmPassword" type="password" class="input-field" v-model="confirmPassword" required />
-
+          
           <div class="terms-row">
             <input id="terms" type="checkbox" v-model="acceptedTerms" required />
             <label for="terms">I accept the <a href="#" target="_blank">terms and conditions</a></label>
@@ -37,6 +42,21 @@ import NavBar from './NavBar.vue';
 export default {
   name: 'SignUpPage',
   components: { NavBar },
+  data() {
+    return {
+      email: '',
+      password: '',
+      confirmPassword: '',
+      acceptedTerms: false,
+      showPassword: false,
+      showConfirmPassword: false,
+    };
+  },
+  methods: {
+    handleRegister() {
+      // Registration logic here
+    },
+  },
 };
 </script>
 
@@ -114,16 +134,44 @@ export default {
   margin-bottom: 0.2rem;
 }
 .input-field {
-  padding: 0.7rem 1rem;
+  padding: 0.7rem 2.5rem 0.7rem 1rem;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 1rem;
   background: #f8f9fa;
   margin-bottom: 0.2rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 .input-field:focus {
   border-color: #42b983;
   outline: none;
+}
+.password-field-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.2rem;
+  position: relative;
+}
+.show-password-btn {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #42b983;
+  font-size: 0.98rem;
+  cursor: pointer;
+  padding: 0 0.3rem;
+  transition: color 0.2s;
+  height: 1.8rem;
+  display: flex;
+  align-items: center;
+}
+.show-password-btn:hover {
+  color: #239562;
 }
 .terms-row {
   display: flex;

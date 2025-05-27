@@ -16,7 +16,12 @@
           <input id="username" type="text" class="input-field" placeholder="" v-model="username" />
 
           <label for="password" class="login-label">Password</label>
-          <input id="password" type="password" class="input-field" placeholder="" v-model="password" />
+          <div class="password-field-wrapper">
+            <input :type="showPassword ? 'text' : 'password'" id="password" class="input-field" placeholder="" v-model="password" />
+            <button type="button" class="show-password-btn" @click="showPassword = !showPassword">
+              {{ showPassword ? 'Hide' : 'Show' }}
+            </button>
+          </div>
 
           <div class="remember-row">
             <input id="remember" type="checkbox" v-model="remember" />
@@ -41,6 +46,7 @@ export default {
       username: '',
       password: '',
       remember: false,
+      showPassword: false,
     };
   },
   methods: {
@@ -129,16 +135,44 @@ export default {
   margin-bottom: 0.2rem;
 }
 .input-field {
-  padding: 0.7rem 1rem;
+  padding: 0.7rem 2.5rem 0.7rem 1rem;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 1rem;
   background: #f8f9fa;
   margin-bottom: 0.2rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 .input-field:focus {
   border-color: #42b983;
   outline: none;
+}
+.password-field-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.2rem;
+  position: relative;
+}
+.show-password-btn {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #42b983;
+  font-size: 0.98rem;
+  cursor: pointer;
+  padding: 0 0.3rem;
+  transition: color 0.2s;
+  height: 1.8rem;
+  display: flex;
+  align-items: center;
+}
+.show-password-btn:hover {
+  color: #239562;
 }
 .remember-row {
   display: flex;
