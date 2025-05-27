@@ -10,7 +10,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json());
+app.use(express.json()); // Parse JSON bodies
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, { dbName: 'qrlibrary' })
