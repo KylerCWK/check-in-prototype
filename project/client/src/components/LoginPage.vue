@@ -31,6 +31,7 @@
           <button class="btn_primary login-btn" type="submit">Login</button>
         </form>
         <router-link to="/reset-password" class="lost-password-link">Forgot password?</router-link>
+        <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
       </div>
     </div>
   </div>
@@ -38,6 +39,8 @@
 
 <script>
 import NavBar from './NavBar.vue';
+import axios from 'axios';
+
 export default {
   name: 'LoginPage',
   components: { NavBar },
@@ -47,13 +50,27 @@ export default {
       password: '',
       remember: false,
       showPassword: false,
+      errorMessage: '',
     };
   },
   methods: {
-    handleLogin() {
-      // Placeholder for login logic
-      // On successful login, redirect to home or dashboard
-      this.$router.push('/');
+    async handleLogin() {
+      this.errorMessage = '';
+      try {
+        const response = await axios.post('http://localhost:5000/api/auth/login', {
+          email: this.username,
+          password: this.password,
+        });
+        // If login is successful
+        this.$router.push('/'); // Redirect to home or dashboard
+        alert('Login successful!');
+      } catch (err) {
+        if (err.response?.status === 401) {
+          this.errorMessage = 'Invalid email or password.';
+        } else {
+          this.errorMessage = 'An error occurred during login. Please try again later.';
+        }
+      }
     },
   },
 };
@@ -196,5 +213,12 @@ export default {
 }
 .lost-password-link:hover {
   color: #f8143e;
+}
+.error-message {
+  margin-top: 1rem;
+  color: #e74c3c;
+  font-size: 0.9rem;
+  text-align: center;
+  width: 100%;
 }
 </style>
