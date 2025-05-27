@@ -21,6 +21,20 @@
               {{ showPassword ? 'Hide' : 'Show' }}
             </button>
           </div>
+          <!--
+          <div class="password-requirements">
+            Password must meet the following requirements:
+            <ul>
+              <li>Minimum length: 8 characters</li>
+              <li>At least one uppercase letter (A–Z)</li>
+              <li>At least one lowercase letter (a–z)</li>
+              <li>At least one digit (0–9)</li>
+              <li>At least one special character (!@#$%^&*, etc.)</li>
+              <li>No common passwords (like "password123", "qwerty", etc.)</li>
+              <li>No repeated characters</li>
+            </ul>
+          </div>
+          -->
 
           <label for="confirmPassword" class="signup-label">Confirm Password</label>
           <div class="password-field-wrapper">
@@ -109,7 +123,11 @@ export default {
         this.confirmPassword = '';
         this.acceptedTerms = false;
       } catch (err) {
-        this.errorMessage = err.response?.data?.message || 'Registration failed.';
+        if (err.response?.data?.message === 'Email already exists') {
+          this.errorMessage = 'This email is already registered. Please use a different email.';
+        } else {
+          this.errorMessage = err.response?.data?.message || 'Registration failed.';
+        }
       } finally {
         this.isSubmitting = false;
       }
