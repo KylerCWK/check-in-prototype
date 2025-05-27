@@ -36,3 +36,30 @@ app.post('/register', async (req, res) => {
     res.status(500).json({ message: 'Error registering user' });
   }
 });
+
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Compare password
+    const bcrypt = require('bcryptjs');
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Optionally, generate a JWT token here for session/auth
+    // const jwt = require('jsonwebtoken');
+    // const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    // return res.json({ message: 'Login successful', token });
+
+    res.json({ message: 'Login successful' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error logging in' });
+  }
+});
