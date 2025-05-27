@@ -30,7 +30,7 @@
 
           <button class="btn_primary login-btn" type="submit">Login</button>
         </form>
-        <router-link to="/reset-password" class="lost-password-link">Lost your password?</router-link>
+        <router-link to="/reset-password" class="lost-password-link">Forgot password?</router-link>
       </div>
     </div>
   </div>
