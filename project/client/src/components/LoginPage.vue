@@ -39,7 +39,7 @@
 
 <script>
 import NavBar from './NavBar.vue';
-import axios from 'axios';
+import api from '../api';
 
 export default {
   name: 'LoginPage',
@@ -57,13 +57,16 @@ export default {
     async handleLogin() {
       this.errorMessage = '';
       try {
-        const response = await axios.post('http://localhost:5000/api/auth/login', {
+        const response = await api.post('/api/auth/login', {
           email: this.username,
           password: this.password,
         });
-        // If login is successful
-        this.$router.push('/'); // Redirect to home or dashboard
-        alert('Login successful!');
+        // Store token in localStorage
+        localStorage.setItem('token', response.data.token);
+        // Store email for personalization (temporary solution)
+        localStorage.setItem('userEmail', this.username);
+        // Login successful
+        this.$router.push('/dashboard');
       } catch (err) {
         if (err.response?.status === 401) {
           this.errorMessage = 'Invalid email or password.';

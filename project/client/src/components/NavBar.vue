@@ -2,7 +2,7 @@
   <nav class="nav-bar">
     <div class="nav-container">
       <router-link to="/" class="nav-logo">
-        <img src="/src/assets/logo_icon2.png" alt="QRBook Logo" class="logo-img" />
+        <img src="../assets/logo_icon2.png" alt="QRBook Logo" class="logo-img" />
         <div class="brand-block">
           <span class="brand-title">QRBook</span>
           <span class="brand-tagline">Connect with Every Page</span>
@@ -12,8 +12,19 @@
         <router-link to="/about" class="nav-link">About</router-link>
         <router-link to="/pricing" class="nav-link">Pricing</router-link>
         <router-link to="/api" class="nav-link">API</router-link>
-        <router-link to="/register" class="nav-link">Sign Up</router-link>
-        <router-link to="/login" class="nav-link">Login</router-link>
+        
+        <!-- Show these links if user is not logged in -->
+        <template v-if="!isLoggedIn">
+          <router-link to="/register" class="nav-link">Sign Up</router-link>
+          <router-link to="/login" class="nav-link">Login</router-link>
+        </template>
+        
+        <!-- Show these links if user is logged in -->
+        <template v-else>
+          <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
+          <router-link to="/qrcode" class="nav-link">Scan QR</router-link>
+          <a href="#" class="nav-link" @click.prevent="logout">Logout</a>
+        </template>
       </div>
     </div>
   </nav>
@@ -22,6 +33,36 @@
 <script>
 export default {
   name: 'NavBar',
+  data() {
+    return {
+      isLoggedIn: false
+    };
+  },
+  methods: {
+    logout() {
+      // Remove authentication token
+      localStorage.removeItem('token');
+      localStorage.removeItem('userEmail');
+      // Update logged in status
+      this.isLoggedIn = false;
+      // Redirect to home page
+      this.$router.push('/');
+    },
+    checkLoginStatus() {
+      // Check for token in localStorage
+      const token = localStorage.getItem('token');
+      this.isLoggedIn = !!token;
+    }
+  },
+  mounted() {
+    // Check login status when component mounts
+    this.checkLoginStatus();
+    
+    // Listen for route changes to update login status
+    this.$router.afterEach(() => {
+      this.checkLoginStatus();
+    });
+  }
 };
 </script>
 

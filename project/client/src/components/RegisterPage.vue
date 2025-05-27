@@ -66,7 +66,7 @@
 
 <script>
 import NavBar from './NavBar.vue';
-import axios from 'axios';
+import api from '../api';
 export default {
   name: 'SignUpPage',
   components: { NavBar },
@@ -112,12 +112,16 @@ export default {
       }
       this.isSubmitting = true;
       try {
-        const response = await axios.post('/api/auth/register', {
+        const response = await api.post('/api/auth/register', {
           email: this.email,
           password: this.password,
           confirmPassword: this.confirmPassword,
         });
         this.successMessage = response.data.message;
+        // Auto-redirect to login page after 2 seconds
+        setTimeout(() => {
+          this.$router.push('/login');
+        }, 2000);
         this.email = '';
         this.password = '';
         this.confirmPassword = '';

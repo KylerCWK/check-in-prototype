@@ -7,16 +7,28 @@ import AboutPage from './components/AboutPage.vue';
 import PricingPage from './components/PricingPage.vue';
 import APIPage from './components/APIPage.vue';
 import AdminDashboard from './components/AdminDashboard.vue';
+import UserDashboard from './components/UserDashboard.vue';
+
+// Authentication guard
+const requireAuth = (to, from, next) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    next('/login');
+  } else {
+    next();
+  }
+};
 
 const routes = [
   { path: '/', component: HomePage },
-  { path: '/qrcode', component: QRCodeGenerator },
+  { path: '/qrcode', component: QRCodeGenerator, beforeEnter: requireAuth },
   { path: '/login', component: LoginPage },
   { path: '/register', component: RegisterPage },
   { path: '/about', component: AboutPage },
   { path: '/pricing', component: PricingPage },
   { path: '/api', component: APIPage },
-  { path: '/admin', component: AdminDashboard },
+  { path: '/admin', component: AdminDashboard, beforeEnter: requireAuth },
+  { path: '/dashboard', component: UserDashboard, beforeEnter: requireAuth },
   { path: '/:catchAll(.*)', redirect: '/' }
 ];
 
