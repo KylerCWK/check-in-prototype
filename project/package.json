@@ -1,9 +1,11 @@
 {
   "name": "qr-app",
   "scripts": {
+    "setup": "node setup.js",
     "server": "cd server && node server.js",
     "client": "cd client && npm run dev",
-    "dev": "concurrently \"npm run server\" \"npm run client\""
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "start": "npm run setup && npm run dev"
   },
   "dependencies": {
     "cors": "^2.8.5",
