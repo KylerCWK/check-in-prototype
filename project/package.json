@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "vue-tsc": "^2.2.10"
   }
 }
