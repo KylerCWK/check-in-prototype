@@ -20,7 +20,7 @@ The easiest way to set up the application is by running the setup script, which 
 
 ```bash
 # Clone the repository
-git clone [repository-url]
+git clone https://github.com/KylerCWK/check-in-prototype.git
 cd Check-In-Prototype/project
 
 # Run the setup script

@@ -8,6 +8,7 @@ import PricingPage from './components/PricingPage.vue';
 import APIPage from './components/APIPage.vue';
 import AdminDashboard from './components/AdminDashboard.vue';
 import UserDashboard from './components/UserDashboard.vue';
+import CatalogPage from './components/CatalogPage.vue';
 
 // Authentication guard
 const requireAuth = (to, from, next) => {
@@ -29,6 +30,7 @@ const routes = [
   { path: '/api', component: APIPage },
   { path: '/admin', component: AdminDashboard, beforeEnter: requireAuth },
   { path: '/dashboard', component: UserDashboard, beforeEnter: requireAuth },
+  { path: '/catalog', component: CatalogPage, beforeEnter: requireAuth },
   { path: '/:catchAll(.*)', redirect: '/' }
 ];
 

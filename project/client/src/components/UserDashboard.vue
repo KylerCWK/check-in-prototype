@@ -37,10 +37,10 @@
               <span class="action-icon">📕</span>
               <span class="action-text">View My Books</span>
             </button>
-            <button class="action-button" @click="notImplemented">
+            <router-link to="/catalog" class="action-button" >
               <span class="action-icon">🔍</span>
               <span class="action-text">Search Catalog</span>
-            </button>
+            </router-link>
             <button class="action-button" @click="notImplemented">
               <span class="action-icon">⚙️</span>
               <span class="action-text">Account Settings</span>
@@ -87,6 +87,11 @@ export default {
     notImplemented() {
       alert('This feature is coming soon!');
     },
+
+    // selectCatalog() {
+    //     this.$router.push('/catalog');
+    // },
+
     logout() {
       // Clear token from local storage
       localStorage.removeItem('token');
