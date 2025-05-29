@@ -9,7 +9,7 @@
             Have an account? <router-link to="/login" class="signin-link">Sign in</router-link>
           </span>
         </div>
-        <div class="oauth-placeholder">[OAuth buttons placeholder]</div>
+        <!-- <div class="oauth-placeholder">[OAuth buttons placeholder]</div> -->
         <form class="signup-form" @submit.prevent="handleRegister">
           <label for="email" class="signup-label">Email Address</label>
           <input id="email" type="email" class="input-field" v-model="email" required />

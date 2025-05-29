@@ -10,7 +10,7 @@
             <router-link to="/register" class="create-account-link">Create an Account</router-link
           ></span>
         </div>
-        <div class="oauth-placeholder">[OAuth buttons placeholder]</div>
+        <!-- <div class="oauth-placeholder">[OAuth buttons placeholder]</div> -->
         <form class="login-form" @submit.prevent="handleLogin">
           <label for="username" class="login-label">Username or Email</label>
           <input id="username" type="text" class="input-field" placeholder="" v-model="username" />
