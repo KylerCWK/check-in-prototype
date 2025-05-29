@@ -1,1 +1,9 @@
-node_modules
+node_modules/
+coverage/
+dist/
+build/
+package-lock.json
+.env
+*.log
+*.tsbuildinfo
+server-config.json

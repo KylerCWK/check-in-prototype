@@ -1,0 +1,23 @@
+{
+  "name": "qr-app",
+  "scripts": {
+    "setup": "node setup.js",
+    "server": "cd server && node server.js",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "start": "npm run setup && npm run dev"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "joi": "^17.13.3",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.10"
+  }
+}
