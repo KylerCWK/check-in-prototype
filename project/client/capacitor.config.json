@@ -1,0 +1,22 @@
+{
+  "appId": "com.example.qrbookapp",
+  "appName": "QR Check-In",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "Camera": {
+      "permissions": ["camera"]
+    },
+    "StatusBar": {
+      "style": "dark"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#ffffff",
+      "showSpinner": false
+    }
+  }
+}

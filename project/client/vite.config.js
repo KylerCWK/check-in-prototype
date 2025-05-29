@@ -43,6 +43,15 @@ export default defineConfig(({ mode }) => {
       })
     ],
     base: './',
+    build: {
+      outDir: 'dist',
+      assetsDir: 'assets',
+      rollupOptions: {
+        output: {
+          manualChunks: undefined
+        }
+      }
+    },
     server: {
       port: parseInt(process.env.VITE_PORT || 3000),
       strictPort: false, // Allow vite to find next available port if default is taken
@@ -54,8 +63,6 @@ export default defineConfig(({ mode }) => {
           secure: false
         }
       },
-    },  build: {
-    outDir: 'dist'
-  }
+    }
   };
 })

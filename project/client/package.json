@@ -6,7 +6,9 @@
     "axios": "^1.9.0",
     "jest": "^29.7.0",
     "prettier": "3.5.3",
-    "vite": "^6.3.5"
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vue-tsc": "^2.2.10"
   },
   "scripts": {
     "dev": "vite",
@@ -18,11 +20,27 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint . --ext .js,.vue",
     "lint:fix": "eslint . --ext .js,.vue --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "cap:build": "npm run build && npx cap sync",
+    "cap:android": "npm run cap:build && npx cap open android",
+    "cap:ios": "npm run cap:build && npx cap open ios",
+    "cap:sync": "npx cap sync",
+    "cap:run:android": "npm run cap:build && npx cap run android",
+    "cap:run:ios": "npm run cap:build && npx cap run ios"
   },
   "dependencies": {
+    "@capacitor/android": "^7.2.0",
+    "@capacitor/app": "^7.0.1",
+    "@capacitor/camera": "^7.0.1",
+    "@capacitor/cli": "^7.2.0",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/device": "^7.0.1",
+    "@capacitor/ios": "^7.2.0",
+    "@capacitor/splash-screen": "^7.0.1",
+    "@capacitor/status-bar": "^7.0.1",
     "axios": "^1.9.0",
     "dotenv": "^16.5.0",
+    "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
     "vue-router": "^4.5.1"
   }

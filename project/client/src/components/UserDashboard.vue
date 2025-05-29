@@ -29,9 +29,13 @@
         <div class="action-section">
           <h2>Quick Actions</h2>
           <div class="action-buttons">
+            <router-link to="/scan" class="action-button">
+              <span class="action-icon">📱</span>
+              <span class="action-text">Scan QR Code</span>
+            </router-link>
             <router-link to="/qrcode" class="action-button">
               <span class="action-icon">📷</span>
-              <span class="action-text">Scan QR Code</span>
+              <span class="action-text">Generate QR Code</span>
             </router-link>
             <button class="action-button" @click="notImplemented">
               <span class="action-icon">📕</span>

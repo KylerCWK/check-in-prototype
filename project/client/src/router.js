@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomePage from './components/HomePage.vue';
 import QRCodeGenerator from './components/QRCodeGenerator.vue';
+import QRScanner from './components/QRScanner.vue';
 import LoginPage from './components/LoginPage.vue';
 import RegisterPage from './components/RegisterPage.vue';
 import AboutPage from './components/AboutPage.vue';
@@ -23,6 +24,7 @@ const requireAuth = (to, from, next) => {
 const routes = [
   { path: '/', component: HomePage },
   { path: '/qrcode', component: QRCodeGenerator, beforeEnter: requireAuth },
+  { path: '/scan', component: QRScanner, beforeEnter: requireAuth },
   { path: '/login', component: LoginPage },
   { path: '/register', component: RegisterPage },
   { path: '/about', component: AboutPage },

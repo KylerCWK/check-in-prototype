@@ -44,8 +44,26 @@ echo "Server .env file created."
 echo "Installing dependencies..."
 npm install
 cd ./client && npm install
+
+# Mobile setup
+echo "Setting up mobile development environment..."
+npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/ios
+npx cap init "QR Check-In" "com.example.qrbookapp" --web-dir "dist"
+npx cap add android
+npx cap add ios
+
+# Install mobile plugins
+npm install @capacitor/camera @capacitor/status-bar @capacitor/splash-screen @capacitor/app @capacitor/device
+
+# Build the web app and sync with mobile projects
+npm run build
+npx cap sync
+
 cd ../server && npm install
 cd ..
 
-echo "Setup complete! Run 'npm run dev' to start the application."
+echo "Setup complete!"
+echo "For web development: 'npm run dev'"
+echo "For Android development: 'cd client && npm run cap:android'"
+echo "For iOS development: 'cd client && npm run cap:ios'"
 echo "Server will run on port $SERVER_PORT, client will run on port $CLIENT_PORT"

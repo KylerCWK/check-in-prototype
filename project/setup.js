@@ -120,14 +120,45 @@ JWT_SECRET=${jwtSecret}
       console.log('Installing server dependencies...');
       execSync('npm install', { stdio: 'inherit', cwd: SERVER_DIR });
       
+      console.log('Installing mobile dependencies...');
+      execSync('npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/ios', { stdio: 'inherit' });
+      
       console.log('Dependencies installed successfully!');
     } catch (error) {
       console.error('Error installing dependencies:', error.message);
     }
     
-    console.log(`\nSetup complete!`);
+    console.log('Initializing Capacitor...');
+    execSync('npx cap init "QR Check-In" "com.example.qrbookapp" --web-dir "dist"', { stdio: 'inherit' });
+    
+    // Check if Android platform already exists
+    if (!fs.existsSync(path.join(ROOT_DIR, 'android'))) {
+      console.log('Adding Android platform...');
+      execSync('npx cap add android', { stdio: 'inherit' });
+    } else {
+      console.log('Android platform already exists, skipping...');
+    }
+
+    // Check if iOS platform already exists
+    if (!fs.existsSync(path.join(ROOT_DIR, 'ios'))) {
+      console.log('Adding iOS platform...');
+      execSync('npx cap add ios', { stdio: 'inherit' });
+    } else {
+      console.log('iOS platform already exists, skipping...');
+    }
+    
+    console.log('Installing mobile plugins...');
+    execSync('npm install @capacitor/camera @capacitor/status-bar @capacitor/splash-screen @capacitor/app @capacitor/device', { stdio: 'inherit' });
+    
+    console.log('Building web app and syncing with mobile projects...');
+    execSync('npm run build', { stdio: 'inherit', cwd: CLIENT_DIR });
+    execSync('npx cap sync', { stdio: 'inherit', cwd: CLIENT_DIR });
+    
+    console.log('\nSetup complete!');
+    console.log('For web development: npm run dev');
+    console.log('For Android development: cd client && npm run cap:android');
+    console.log('For iOS development: cd client && npm run cap:ios');
     console.log(`Server will run on port ${serverPort}, client will run on port ${clientPort}`);
-    console.log(`Run 'npm run dev' to start the application.`);
     
   } catch (error) {
     console.error('Setup failed:', error);

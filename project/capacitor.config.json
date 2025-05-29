@@ -1,0 +1,5 @@
+{
+  "appId": "com.example.qrbookapp",
+  "appName": "QR Check-In",
+  "webDir": "dist"
+}
