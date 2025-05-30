@@ -5,6 +5,7 @@
     "server": "cd server && node server.js",
     "client": "cd client && npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "restart": "node restart.js",
     "start": "npm run setup && npm run dev"
   },
   "dependencies": {

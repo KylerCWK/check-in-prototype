@@ -45,7 +45,7 @@ const startServer = (port) => {
         console.log(`Server running on port ${port}`);
 
         const configData = JSON.stringify({ 
-          serverPort: port,
+          serverPort: port.toString(),
           timestamp: new Date().toISOString()
         });
         
