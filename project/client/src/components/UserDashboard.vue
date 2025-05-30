@@ -4,9 +4,9 @@
     <div class="dashboard-content">
       <div class="dashboard-header">
         <h1>Welcome to Your Dashboard</h1>
-        <p class="welcome-text">Hello, {{userName}}! Manage your books, scans, and preferences here.</p>
+        <p class="welcome-text">Hello, {{ userName }}! Manage your books, scans, and preferences here.</p>
       </div>
-      
+
       <div class="dashboard-stats">
         <div class="stat-card">
           <div class="stat-icon">📚</div>
@@ -24,7 +24,7 @@
           <div class="stat-label">Total Activity</div>
         </div>
       </div>
-      
+
       <div class="dashboard-actions">
         <div class="action-section">
           <h2>Quick Actions</h2>
@@ -33,11 +33,15 @@
               <span class="action-icon">📷</span>
               <span class="action-text">Scan QR Code</span>
             </router-link>
+            <router-link to="/favorites" class="action-button">
+              <span class="action-icon">❤️</span>
+              <span class="action-text">My Favorites</span>
+            </router-link>
             <button class="action-button" @click="notImplemented">
               <span class="action-icon">📕</span>
               <span class="action-text">View My Books</span>
             </button>
-            <router-link to="/catalog" class="action-button" >
+            <router-link to="/catalog" class="action-button">
               <span class="action-icon">🔍</span>
               <span class="action-text">Search Catalog</span>
             </router-link>
@@ -48,7 +52,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="dashboard-sections">
         <div class="section recent-activity">
           <h2>Recent Activity</h2>
@@ -58,7 +62,7 @@
             <p class="empty-hint">Your recent book check-ins and check-outs will appear here</p>
           </div>
         </div>
-        
+
         <div class="section recommendations">
           <h2>Recommended Books</h2>
           <div class="empty-state">
@@ -106,7 +110,7 @@ export default {
     if (!token) {
       this.$router.push('/login');
     }
-    
+
     // For now just get email from local storage as example
     const userEmail = localStorage.getItem('userEmail');
     if (userEmail) {
@@ -280,20 +284,21 @@ export default {
 }
 
 @media (max-width: 768px) {
+
   .dashboard-stats,
   .dashboard-sections {
     flex-direction: column;
   }
-  
+
   .section,
   .stat-card {
     min-width: 100%;
   }
-  
+
   .action-buttons {
     justify-content: center;
   }
-  
+
   .dashboard-content {
     padding: 1rem;
   }

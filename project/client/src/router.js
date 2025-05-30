@@ -9,6 +9,7 @@ import APIPage from './components/APIPage.vue';
 import AdminDashboard from './components/AdminDashboard.vue';
 import UserDashboard from './components/UserDashboard.vue';
 import CatalogPage from './components/CatalogPage.vue';
+import FavoritesPage from './components/FavoritesPage.vue';
 
 // Authentication guard
 const requireAuth = (to, from, next) => {
@@ -49,7 +50,8 @@ const routes = [
     beforeEnter: requireAuth,
     props: { recommendedMode: true }
   },
-  { path: '/:catchAll(.*)', redirect: '/' }
+  { path: '/:catchAll(.*)', redirect: '/' },
+  { path: '/favorites', component: FavoritesPage, beforeEnter: requireAuth }
 ];
 
 const router = createRouter({

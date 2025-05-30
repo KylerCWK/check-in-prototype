@@ -1,25 +1,20 @@
 <template>
   <div class="catalog-page">
     <nav-bar />
-    
+
     <div class="catalog-container">
       <div class="catalog-header">
         <h1>Book Catalog</h1>
-        
+
         <!-- Search and Filter -->
         <div class="catalog-filters">
           <div class="search-bar">
             <div class="search-container">
-              <input 
-                v-model="searchQuery" 
-                @input="debounceSearch"
-                type="text" 
-                :placeholder="searchPlaceholder"
-                class="search-input"
-              />
+              <input v-model="searchQuery" @input="debounceSearch" type="text" :placeholder="searchPlaceholder"
+                class="search-input" />
               <span class="search-icon">🔍</span>
             </div>
-            
+
             <div class="search-options">
               <select v-model="searchBy" @change="updateSearchPlaceholder" class="search-select">
                 <option value="all">All Fields</option>
@@ -27,7 +22,7 @@
                 <option value="author">Author</option>
                 <option value="genre">Genre</option>
               </select>
-              
+
               <select v-model="sortBy" @change="loadBooks(1)" class="sort-select">
                 <option value="popular">Most Popular</option>
                 <option value="newest">Newest</option>
@@ -36,7 +31,7 @@
               </select>
             </div>
           </div>
-          
+
           <select v-model="selectedGenre" @change="loadBooks(1)" class="genre-select">
             <option value="">All Genres</option>
             <option v-for="genre in genres" :key="genre" :value="genre">
@@ -44,17 +39,13 @@
             </option>
           </select>
         </div>
-        
+
         <!-- Popular Tags -->
         <div class="popular-tags">
           <span class="tags-label">Popular tags:</span>
           <div class="tags-list">
-            <button 
-              v-for="(tag, index) in popularTags" 
-              :key="tag"
-              :class="['tag', `tag-color-${index % 5}`]"
-              @click="selectTag(tag)"
-            >
+            <button v-for="(tag, index) in popularTags" :key="tag" :class="['tag', `tag-color-${index % 5}`]"
+              @click="selectTag(tag)">
               {{ tag }}
             </button>
           </div>
@@ -64,24 +55,16 @@
       <!-- Trending Books Section -->
       <div class="section-header">
         <h2>
-          <span class="trending-icon">📈</span> 
+          <span class="trending-icon">📈</span>
           Trending Books
           <small class="subtitle">Top picks for readers</small>
         </h2>
         <div class="section-actions">
           <div class="view-options">
-            <button 
-              :class="['view-btn', { active: viewMode === 'grid' }]"
-              @click="viewMode = 'grid'"
-              title="Grid view"
-            >
+            <button :class="['view-btn', { active: viewMode === 'grid' }]" @click="viewMode = 'grid'" title="Grid view">
               <i class="grid-icon">▦</i>
             </button>
-            <button 
-              :class="['view-btn', { active: viewMode === 'list' }]"
-              @click="viewMode = 'list'"
-              title="List view"
-            >
+            <button :class="['view-btn', { active: viewMode === 'list' }]" @click="viewMode = 'list'" title="List view">
               <i class="list-icon">≡</i>
             </button>
           </div>
@@ -100,38 +83,34 @@
         <div v-if="viewMode === 'grid'" class="books-grid">
           <div v-for="book in books" :key="book._id" class="book-card">
             <div class="book-cover-container">
-              <img 
-                :src="book.coverUrl || '/default-cover.png'" 
-                :alt="book.title"
-                class="book-cover"
-                @error="handleImageError"
-              />
+              <img :src="book.coverUrl || '/default-cover.png'" :alt="book.title" class="book-cover"
+                @error="handleImageError" />
               <div class="book-actions">
-                <button class="favorite-btn" title="Add to favorites">❤️</button>
+                <button class="favorite-btn" title="Add to favorites" @click="addToFavorites(book)">❤️
+                </button>
                 <button class="info-btn" title="View details">ℹ️</button>
               </div>
             </div>
             <div class="book-info">
               <h3 class="book-title">{{ book.title }}</h3>
               <p class="author">{{ book.author }}</p>
-              
+
               <!-- AI Insights Badge -->
               <div class="ai-insights">
                 <span class="ai-badge">AI Insights</span>
               </div>
-              
+
               <div class="genres">
-                <span v-for="(genre, index) in book.genres.slice(0, 2)" 
-                      :key="genre" 
-                      :class="['genre-tag', `genre-color-${index % 5}`]">
+                <span v-for="(genre, index) in book.genres.slice(0, 2)" :key="genre"
+                  :class="['genre-tag', `genre-color-${index % 5}`]">
                   {{ genre }}
                 </span>
               </div>
-              
+
               <div class="ai-tags">
                 <span class="ai-tag">{{ getAiMoodTag(book) }}</span>
               </div>
-              
+
               <div class="stats">
                 <span><i class="icon">👁️</i> {{ book.stats.viewCount }}</span>
                 <span><i class="icon">⭐</i> {{ book.stats.rating || 'N/A' }}</span>
@@ -140,50 +119,47 @@
             </div>
           </div>
         </div>
-        
+
         <!-- List View -->
         <div v-else class="books-list">
           <div v-for="book in books" :key="book._id" class="book-list-item">
             <div class="list-cover">
-              <img 
-                :src="book.coverUrl || '/default-cover.png'" 
-                :alt="book.title"
-                @error="handleImageError"
-              />
+              <img :src="book.coverUrl || '/default-cover.png'" :alt="book.title" @error="handleImageError" />
             </div>
             <div class="list-content">
               <div class="list-header">
                 <h3 class="book-title">{{ book.title }}</h3>
                 <div class="list-actions">
-                  <button class="list-action-btn" title="Add to favorites">❤️</button>
+                  <button class="list-action-btn" title="Add to favorites" @click="addToFavorites(book)">
+                    ❤️
+                  </button>
                   <button class="list-action-btn" title="View details">ℹ️</button>
                 </div>
               </div>
               <p class="author">{{ book.author }}</p>
-              
+
               <div class="list-ai-section">
                 <!-- AI Badge and Summary -->
                 <span class="ai-badge">AI Insights</span>
                 <p class="ai-summary">{{ getAiSummary(book) }}</p>
               </div>
-              
+
               <p class="description" v-if="book.description">{{ truncateDescription(book.description, 150) }}</p>
               <div class="list-footer">
                 <div class="top-row">
                   <div class="genres">
-                    <span v-for="(genre, index) in book.genres.slice(0, 3)" 
-                          :key="genre" 
-                          :class="['genre-tag', `genre-color-${index % 5}`]">
+                    <span v-for="(genre, index) in book.genres.slice(0, 3)" :key="genre"
+                      :class="['genre-tag', `genre-color-${index % 5}`]">
                       {{ genre }}
                     </span>
                   </div>
-                  
+
                   <div class="ai-tags">
                     <span class="ai-tag">{{ getAiMoodTag(book) }}</span>
                     <span class="ai-reading-level">{{ getReadingLevel(book) }}</span>
                   </div>
                 </div>
-                
+
                 <div class="stats">
                   <span><i class="icon">👁️</i> {{ book.stats.viewCount }}</span>
                   <span><i class="icon">⭐</i> {{ book.stats.rating || 'N/A' }}</span>
@@ -204,30 +180,18 @@
 
       <!-- Pagination -->
       <div v-if="!loading && pagination.pages > 1" class="pagination">
-        <button 
-          :disabled="currentPage === 1"
-          @click="loadBooks(currentPage - 1)"
-          class="pagination-btn"
-        >
+        <button :disabled="currentPage === 1" @click="loadBooks(currentPage - 1)" class="pagination-btn">
           &laquo; Previous
         </button>
-        
+
         <div class="page-numbers">
-          <button 
-            v-for="page in displayedPages" 
-            :key="page" 
-            @click="loadBooks(page)"
-            :class="['page-btn', { active: currentPage === page }]"
-          >
+          <button v-for="page in displayedPages" :key="page" @click="loadBooks(page)"
+            :class="['page-btn', { active: currentPage === page }]">
             {{ page }}
           </button>
         </div>
-        
-        <button 
-          :disabled="currentPage === pagination.pages"
-          @click="loadBooks(currentPage + 1)"
-          class="pagination-btn"
-        >
+
+        <button :disabled="currentPage === pagination.pages" @click="loadBooks(currentPage + 1)" class="pagination-btn">
           Next &raquo;
         </button>
       </div>
@@ -245,7 +209,7 @@ export default {
   components: {
     NavBar
   },
-  
+
   setup() {
     const books = ref([]);
     const genres = ref([]);
@@ -263,33 +227,33 @@ export default {
       page: 1,
       pages: 0
     });
-    
+
     // Popular tags for quick filtering
     const popularTags = ref([
-      'Fantasy', 'Science Fiction', 'Mystery', 'Romance', 
+      'Fantasy', 'Science Fiction', 'Mystery', 'Romance',
       'Biography', 'Self Help', 'Contemporary', 'Fiction'
     ]);
-    
+
     // AI placeholder functions
     const getAiSummary = (book) => {
       // Placeholder for AI-generated summary
-      return book.aiAnalysis?.summary || 
+      return book.aiAnalysis?.summary ||
         "AI analysis will provide a personalized summary based on your reading preferences and the book's content.";
     };
-    
+
     const getAiMoodTag = (book) => {
       // Placeholder for AI-detected mood/theme
       const moods = ['Thought-provoking', 'Inspiring', 'Adventurous', 'Educational', 'Heartwarming'];
-      
+
       if (book.aiAnalysis?.moodTags?.length) {
         return book.aiAnalysis.moodTags[0];
       }
-      
+
       // Generate a consistent pseudo-random mood based on book title
       const titleSum = book.title.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
       return moods[titleSum % moods.length];
     };
-    
+
     const getComplexityLevel = (book) => {
       // Placeholder for AI-determined complexity
       if (book.aiAnalysis?.complexityScore) {
@@ -298,39 +262,39 @@ export default {
         if (score < 7) return 'Medium';
         return 'Advanced';
       }
-      
+
       // Random placeholder based on book title length
       const levels = ['Easy', 'Medium', 'Advanced'];
       const titleLength = book.title.length;
       return levels[titleLength % levels.length];
     };
-    
+
     const getReadingLevel = (book) => {
       // Placeholder for reading level
       const levels = ['Elementary', 'Middle School', 'High School', 'College', 'Professional'];
-      
+
       if (book.metadata?.readingLevel) {
         return book.metadata.readingLevel;
       }
-      
+
       // Generate a consistent pseudo-random level based on author name
       const authorSum = book.author.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
       return levels[authorSum % levels.length];
     };
-    
+
     const getReadingTime = (book) => {
       // Placeholder for AI-estimated reading time
       if (book.aiFeatures?.readingTime) {
         return book.aiFeatures.readingTime;
       }
-      
+
       // Generate placeholder based on page count if available
       const pageCount = book.metadata?.pageCount || 0;
       if (pageCount > 0) {
         const hours = Math.round(pageCount / 30); // Approx 30 pages per hour
         return hours <= 1 ? '< 1 hr' : `~${hours} hrs`;
       }
-      
+
       return '3-5 hrs'; // Default placeholder
     };
 
@@ -338,19 +302,19 @@ export default {
     const displayedPages = computed(() => {
       const totalPages = pagination.value.pages;
       const current = currentPage.value;
-      
+
       if (totalPages <= 5) {
         return Array.from({ length: totalPages }, (_, i) => i + 1);
       }
-      
+
       if (current <= 3) {
         return [1, 2, 3, 4, 5];
       }
-      
+
       if (current >= totalPages - 2) {
         return [totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
       }
-      
+
       return [current - 2, current - 1, current, current + 1, current + 2];
     });
 
@@ -368,7 +332,7 @@ export default {
         case 'title':
           searchPlaceholder.value = 'Search by title...';
           break;
-        case 'author': 
+        case 'author':
           searchPlaceholder.value = 'Search by author...';
           break;
         case 'genre':
@@ -378,18 +342,18 @@ export default {
           searchPlaceholder.value = 'Search by title, author, or genre...';
       }
     };
-    
+
     const selectTag = (tag) => {
       selectedGenre.value = tag;
       loadBooks(1);
     };
-    
+
     const truncateDescription = (text, maxLength) => {
       if (!text) return '';
       if (text.length <= maxLength) return text;
       return text.substring(0, maxLength) + '...';
     };
-    
+
     const resetFilters = () => {
       searchQuery.value = '';
       selectedGenre.value = '';
@@ -402,7 +366,7 @@ export default {
     const loadBooks = async (page) => {
       loading.value = true;
       error.value = null;
-      
+
       try {
         // Using the baseURL from Vite's proxy configuration
         const response = await axios.get('/api/catalog', {
@@ -415,7 +379,7 @@ export default {
             sortBy: sortBy.value
           }
         });
-        
+
         books.value = response.data.books;
         pagination.value = response.data.pagination;
         currentPage.value = page;
@@ -435,7 +399,7 @@ export default {
       } catch (err) {
         console.error('Error loading genres:', err);
         genres.value = [];
-        
+
         // Show some default genres if API fails
         if (genres.value.length === 0) {
           genres.value = ['Fiction', 'Fantasy', 'Science Fiction', 'Mystery', 'Biography'];
@@ -450,18 +414,32 @@ export default {
     onMounted(() => {
       loadGenres();
       loadBooks(1);
-      
+
       // Save view preference to localStorage if user changes it
       watch(viewMode, (newValue) => {
         localStorage.setItem('bookViewMode', newValue);
       });
-      
+
       // Load user's preferred view mode from localStorage
       const savedViewMode = localStorage.getItem('bookViewMode');
       if (savedViewMode === 'grid' || savedViewMode === 'list') {
         viewMode.value = savedViewMode;
       }
     });
+
+    const addToFavorites = (book) => {
+      const existing = JSON.parse(localStorage.getItem('favorites') || '[]');
+      const alreadyAdded = existing.find(fav => fav._id === book._id);
+
+      if (!alreadyAdded) {
+        existing.push(book);
+        localStorage.setItem('favorites', JSON.stringify(existing));
+        alert(`Added "${book.title}" to favorites.`);
+      } else {
+        alert(`"${book.title}" is already in favorites.`);
+      }
+    };
+
 
     return {
       books,
@@ -489,7 +467,8 @@ export default {
       getAiMoodTag,
       getComplexityLevel,
       getReadingLevel,
-      getReadingTime
+      getReadingTime,
+      addToFavorites
     };
   }
 };
@@ -571,7 +550,8 @@ export default {
   transition: all 0.2s;
 }
 
-.view-btn:hover, .view-btn.active {
+.view-btn:hover,
+.view-btn.active {
   background: #007bff;
   color: white;
   border-color: #007bff;
@@ -646,14 +626,29 @@ export default {
 
 .tag:hover {
   transform: translateY(-2px);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
-.tag-color-0 { background-color: #2364AA; }
-.tag-color-1 { background-color: #3da5d9; }
-.tag-color-2 { background-color: #fec601; color: #333; }
-.tag-color-3 { background-color: #73bfb8; }
-.tag-color-4 { background-color: #ea7317; }
+.tag-color-0 {
+  background-color: #2364AA;
+}
+
+.tag-color-1 {
+  background-color: #3da5d9;
+}
+
+.tag-color-2 {
+  background-color: #fec601;
+  color: #333;
+}
+
+.tag-color-3 {
+  background-color: #73bfb8;
+}
+
+.tag-color-4 {
+  background-color: #ea7317;
+}
 
 /* AI Elements */
 .ai-insights {
@@ -745,7 +740,8 @@ export default {
   color: #999;
 }
 
-.search-input, .genre-select {
+.search-input,
+.genre-select {
   padding: 12px 15px;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -759,7 +755,8 @@ export default {
   padding-right: 40px;
 }
 
-.search-input:focus, .genre-select:focus {
+.search-input:focus,
+.genre-select:focus {
   border-color: #007bff;
   outline: none;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
@@ -790,7 +787,7 @@ export default {
   overflow: hidden;
   background: white;
   transition: transform 0.3s, box-shadow 0.3s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .book-list-item {
@@ -799,12 +796,12 @@ export default {
   background: white;
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .book-list-item:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
 .list-cover {
@@ -868,7 +865,7 @@ export default {
 
 .book-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
 .book-cover-container {
@@ -903,7 +900,8 @@ export default {
   opacity: 1;
 }
 
-.favorite-btn, .info-btn {
+.favorite-btn,
+.info-btn {
   background: rgba(255, 255, 255, 0.9);
   border: none;
   border-radius: 50%;
@@ -916,7 +914,8 @@ export default {
   justify-content: center;
 }
 
-.favorite-btn:hover, .info-btn:hover {
+.favorite-btn:hover,
+.info-btn:hover {
   transform: scale(1.1);
 }
 
@@ -958,11 +957,32 @@ export default {
   color: white;
 }
 
-.genre-color-0 { background-color: #2364AA; } /* Primary */
-.genre-color-1 { background-color: #3da5d9; } /* Secondary blue */
-.genre-color-2 { background-color: #fec601; color: #333; } /* Accent yellow */
-.genre-color-3 { background-color: #73bfb8; } /* Teal */
-.genre-color-4 { background-color: #ea7317; } /* Orange */
+.genre-color-0 {
+  background-color: #2364AA;
+}
+
+/* Primary */
+.genre-color-1 {
+  background-color: #3da5d9;
+}
+
+/* Secondary blue */
+.genre-color-2 {
+  background-color: #fec601;
+  color: #333;
+}
+
+/* Accent yellow */
+.genre-color-3 {
+  background-color: #73bfb8;
+}
+
+/* Teal */
+.genre-color-4 {
+  background-color: #ea7317;
+}
+
+/* Orange */
 
 .stats {
   display: flex;
@@ -1083,35 +1103,35 @@ export default {
   .search-bar {
     min-width: 100%;
   }
-  
+
   .genre-select {
     width: 100%;
   }
-  
+
   .catalog-filters {
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .books-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 15px;
   }
-  
+
   .book-cover-container {
     height: 240px;
   }
-  
+
   .book-list-item {
     flex-direction: column;
   }
-  
+
   .list-cover {
     flex: 0 0 auto;
     height: 200px;
     width: 100%;
   }
-  
+
   .section-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1124,19 +1144,19 @@ export default {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .books-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
-  
+
   .book-cover-container {
     height: 200px;
   }
-  
+
   .genre-tag {
     font-size: 0.7em;
   }
-  
+
   .pagination {
     flex-wrap: wrap;
   }
