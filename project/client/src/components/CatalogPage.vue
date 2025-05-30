@@ -114,6 +114,12 @@
             <div class="book-info">
               <h3 class="book-title">{{ book.title }}</h3>
               <p class="author">{{ book.author }}</p>
+              
+              <!-- AI Insights Badge -->
+              <div class="ai-insights">
+                <span class="ai-badge">AI Insights</span>
+              </div>
+              
               <div class="genres">
                 <span v-for="(genre, index) in book.genres.slice(0, 2)" 
                       :key="genre" 
@@ -121,9 +127,15 @@
                   {{ genre }}
                 </span>
               </div>
+              
+              <div class="ai-tags">
+                <span class="ai-tag">{{ getAiMoodTag(book) }}</span>
+              </div>
+              
               <div class="stats">
                 <span><i class="icon">👁️</i> {{ book.stats.viewCount }}</span>
                 <span><i class="icon">⭐</i> {{ book.stats.rating || 'N/A' }}</span>
+                <span title="Reading complexity"><i class="icon">📊</i> {{ getComplexityLevel(book) }}</span>
               </div>
             </div>
           </div>
@@ -148,18 +160,35 @@
                 </div>
               </div>
               <p class="author">{{ book.author }}</p>
+              
+              <div class="list-ai-section">
+                <!-- AI Badge and Summary -->
+                <span class="ai-badge">AI Insights</span>
+                <p class="ai-summary">{{ getAiSummary(book) }}</p>
+              </div>
+              
               <p class="description" v-if="book.description">{{ truncateDescription(book.description, 150) }}</p>
               <div class="list-footer">
-                <div class="genres">
-                  <span v-for="(genre, index) in book.genres.slice(0, 3)" 
-                        :key="genre" 
-                        :class="['genre-tag', `genre-color-${index % 5}`]">
-                    {{ genre }}
-                  </span>
+                <div class="top-row">
+                  <div class="genres">
+                    <span v-for="(genre, index) in book.genres.slice(0, 3)" 
+                          :key="genre" 
+                          :class="['genre-tag', `genre-color-${index % 5}`]">
+                      {{ genre }}
+                    </span>
+                  </div>
+                  
+                  <div class="ai-tags">
+                    <span class="ai-tag">{{ getAiMoodTag(book) }}</span>
+                    <span class="ai-reading-level">{{ getReadingLevel(book) }}</span>
+                  </div>
                 </div>
+                
                 <div class="stats">
                   <span><i class="icon">👁️</i> {{ book.stats.viewCount }}</span>
                   <span><i class="icon">⭐</i> {{ book.stats.rating || 'N/A' }}</span>
+                  <span title="Reading complexity"><i class="icon">📊</i> {{ getComplexityLevel(book) }}</span>
+                  <span title="Estimated reading time"><i class="icon">⏱️</i> {{ getReadingTime(book) }}</span>
                 </div>
               </div>
             </div>
@@ -240,6 +269,70 @@ export default {
       'Fantasy', 'Science Fiction', 'Mystery', 'Romance', 
       'Biography', 'Self Help', 'Contemporary', 'Fiction'
     ]);
+    
+    // AI placeholder functions
+    const getAiSummary = (book) => {
+      // Placeholder for AI-generated summary
+      return book.aiAnalysis?.summary || 
+        "AI analysis will provide a personalized summary based on your reading preferences and the book's content.";
+    };
+    
+    const getAiMoodTag = (book) => {
+      // Placeholder for AI-detected mood/theme
+      const moods = ['Thought-provoking', 'Inspiring', 'Adventurous', 'Educational', 'Heartwarming'];
+      
+      if (book.aiAnalysis?.moodTags?.length) {
+        return book.aiAnalysis.moodTags[0];
+      }
+      
+      // Generate a consistent pseudo-random mood based on book title
+      const titleSum = book.title.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      return moods[titleSum % moods.length];
+    };
+    
+    const getComplexityLevel = (book) => {
+      // Placeholder for AI-determined complexity
+      if (book.aiAnalysis?.complexityScore) {
+        const score = book.aiAnalysis.complexityScore;
+        if (score < 3) return 'Easy';
+        if (score < 7) return 'Medium';
+        return 'Advanced';
+      }
+      
+      // Random placeholder based on book title length
+      const levels = ['Easy', 'Medium', 'Advanced'];
+      const titleLength = book.title.length;
+      return levels[titleLength % levels.length];
+    };
+    
+    const getReadingLevel = (book) => {
+      // Placeholder for reading level
+      const levels = ['Elementary', 'Middle School', 'High School', 'College', 'Professional'];
+      
+      if (book.metadata?.readingLevel) {
+        return book.metadata.readingLevel;
+      }
+      
+      // Generate a consistent pseudo-random level based on author name
+      const authorSum = book.author.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      return levels[authorSum % levels.length];
+    };
+    
+    const getReadingTime = (book) => {
+      // Placeholder for AI-estimated reading time
+      if (book.aiFeatures?.readingTime) {
+        return book.aiFeatures.readingTime;
+      }
+      
+      // Generate placeholder based on page count if available
+      const pageCount = book.metadata?.pageCount || 0;
+      if (pageCount > 0) {
+        const hours = Math.round(pageCount / 30); // Approx 30 pages per hour
+        return hours <= 1 ? '< 1 hr' : `~${hours} hrs`;
+      }
+      
+      return '3-5 hrs'; // Default placeholder
+    };
 
     // Compute displayed page numbers for pagination
     const displayedPages = computed(() => {
@@ -391,7 +484,12 @@ export default {
       handleImageError,
       selectTag,
       updateSearchPlaceholder,
-      truncateDescription
+      truncateDescription,
+      getAiSummary,
+      getAiMoodTag,
+      getComplexityLevel,
+      getReadingLevel,
+      getReadingTime
     };
   }
 };
@@ -556,6 +654,88 @@ export default {
 .tag-color-2 { background-color: #fec601; color: #333; }
 .tag-color-3 { background-color: #73bfb8; }
 .tag-color-4 { background-color: #ea7317; }
+
+/* AI Elements */
+.ai-insights {
+  margin: 5px 0;
+}
+
+.ai-badge {
+  background: linear-gradient(90deg, #3da5d9, #2364AA);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ai-badge::before {
+  content: "🤖";
+  margin-right: 4px;
+  font-size: 0.8rem;
+}
+
+.ai-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 8px 0;
+}
+
+.ai-tag {
+  background-color: #f0f8ff;
+  color: #2364AA;
+  border: 1px solid #d0e6ff;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  min-height: 20px;
+}
+
+.ai-reading-level {
+  background-color: #ffe8d6;
+  color: #ea7317;
+  border: 1px solid #ffd0b0;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  min-height: 20px;
+}
+
+.list-ai-section {
+  margin: 10px 0;
+  padding: 8px 12px;
+  background-color: #f5f9ff;
+  border-left: 3px solid #3da5d9;
+  border-radius: 0 4px 4px 0;
+}
+
+.ai-summary {
+  font-size: 0.85rem;
+  margin: 8px 0 0 0;
+  color: #666;
+  font-style: italic;
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
 .search-icon {
   position: absolute;

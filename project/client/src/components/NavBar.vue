@@ -9,13 +9,14 @@
         </div>
       </router-link>
       <div class="nav-links">
+        <!-- Common link for everyone -->
         <router-link to="/catalog" class="nav-link">Catalog</router-link>
-        <router-link to="/about" class="nav-link">About</router-link>
-        <router-link to="/pricing" class="nav-link">Pricing</router-link>
-        <router-link to="/api" class="nav-link">API</router-link>
         
-        <!-- Show these links if user is not logged in -->
+        <!-- Links for logged out users -->
         <template v-if="!isLoggedIn">
+          <router-link to="/about" class="nav-link">About</router-link>
+          <router-link to="/pricing" class="nav-link">Pricing</router-link>
+          <router-link to="/api" class="nav-link">API</router-link>
           <router-link to="/register" class="nav-link sign-up">Sign Up</router-link>
           <div class="login-container">
             <router-link to="/login" class="nav-link login-btn">Login</router-link>
@@ -29,11 +30,29 @@
           </div>
         </template>
         
-        <!-- Show these links if user is logged in -->
+        <!-- Links for logged in users -->
         <template v-else>
           <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
+          <router-link to="/profile" class="nav-link">My Profile</router-link>
           <router-link to="/qrcode" class="nav-link">Scan QR</router-link>
-          <a href="#" class="nav-link logout-btn" @click.prevent="logout">Sign Out</a>
+          <router-link to="/recommended" class="nav-link ai-nav-link">
+            <span class="ai-nav-icon">🤖</span>
+            My Recommendations
+          </router-link>
+          <div class="user-menu" @mouseenter="showDropdown = true" @mouseleave="hideDropdownWithDelay">
+            <button class="user-menu-btn">
+              <span class="user-initial">{{ getUserInitial() }}</span>
+              <span class="user-name">{{ userName }}</span>
+            </button>
+            <div class="user-dropdown" :class="{ show: showDropdown }" @mouseenter="clearHideTimeout" @mouseleave="hideDropdownWithDelay">
+              <router-link to="/settings" class="dropdown-item">
+                <span class="dropdown-icon">⚙️</span> Settings
+              </router-link>
+              <a href="#" class="dropdown-item logout-item" @click.prevent="logout">
+                <span class="dropdown-icon">⎋</span> Sign Out
+              </a>
+            </div>
+          </div>
         </template>
       </div>
     </div>
@@ -45,16 +64,39 @@ export default {
   name: 'NavBar',
   data() {
     return {
-      isLoggedIn: false
+      isLoggedIn: false,
+      userName: '',
+      showDropdown: false,
+      hideTimeout: null
     };
   },
   methods: {
+    hideDropdownWithDelay() {
+      this.hideTimeout = setTimeout(() => {
+        this.showDropdown = false;
+      }, 200); // 200ms delay
+    },
+    clearHideTimeout() {
+      if (this.hideTimeout) {
+        clearTimeout(this.hideTimeout);
+        this.hideTimeout = null;
+      }
+    },
+    getUserInitial() {
+      return this.userName ? this.userName.charAt(0).toUpperCase() : 'U';
+    },
     logout() {
       // Remove authentication token
       localStorage.removeItem('token');
       localStorage.removeItem('userEmail');
+      
       // Update logged in status
       this.isLoggedIn = false;
+      this.userName = '';
+      
+      // Dispatch logout event
+      window.dispatchEvent(new Event('auth:logout'));
+      
       // Redirect to home page
       this.$router.push('/');
     },
@@ -62,8 +104,31 @@ export default {
       // Check for token in localStorage
       const token = localStorage.getItem('token');
       this.isLoggedIn = !!token;
+      
+      if (this.isLoggedIn) {
+        const email = localStorage.getItem('userEmail');
+        if (email) {
+          // Extract name from email for now (can be improved later)
+          this.userName = email.split('@')[0];
+        }
+      }
     }
   },
+  created() {
+    // Check login status when component is created
+    this.checkLoginStatus();
+    
+    // Listen for custom login/logout events
+    window.addEventListener('auth:login', this.checkLoginStatus);
+    window.addEventListener('auth:logout', this.checkLoginStatus);
+  },
+  
+  beforeUnmount() {
+    // Clean up event listeners
+    window.removeEventListener('auth:login', this.checkLoginStatus);
+    window.removeEventListener('auth:logout', this.checkLoginStatus);
+  },
+  
   mounted() {
     // Check login status when component mounts
     this.checkLoginStatus();
@@ -147,10 +212,14 @@ export default {
 .login-btn {
   background-color: #fec601;
   color: #2364AA;
-  padding: 0.5rem 1.2rem;
+  padding: 0.4rem 1.2rem;
   font-weight: 600;
   border-radius: 6px;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.1rem;
 }
 
 .login-btn:hover {
@@ -236,6 +305,96 @@ export default {
   color: white;
   padding: 2px 5px;
   border-radius: 3px;
+}
+
+.user-menu {
+  position: relative;
+}
+
+.user-menu-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 22px;
+  height: 36px;
+  padding: 0 16px 0 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+}
+
+.user-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.user-initial {
+  width: 28px;
+  height: 28px;
+  background: #fec601;
+  color: #2364AA;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-left: 8px;
+  margin-right: 12px;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  min-width: 180px;
+  display: none;
+  z-index: 100;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.user-dropdown.show {
+  display: block;
+}
+
+.logout-item {
+  border-top: 1px solid #eee;
+  color: #e74c3c;
+}
+
+.logout-item:hover {
+  background-color: #fff0f0;
+  color: #c0392b;
+}
+
+.dropdown-icon {
+  margin-right: 10px;
+  font-size: 1.1em;
+}
+
+.ai-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.15));
+  border-radius: 6px;
+}
+
+.ai-nav-icon {
+  font-size: 1.05em;
 }
 
 @media (max-width: 900px) {

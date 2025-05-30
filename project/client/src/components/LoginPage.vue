@@ -65,8 +65,16 @@ export default {
         localStorage.setItem('token', response.data.token);
         // Store email for personalization (temporary solution)
         localStorage.setItem('userEmail', this.username);
-        // Login successful
-        this.$router.push('/dashboard');
+        
+        // Dispatch a custom event to notify components that login was successful
+        window.dispatchEvent(new Event('auth:login'));
+        
+        // Check if there's a redirect path stored
+        const redirect = this.$route.query.redirect || localStorage.getItem('redirectAfterLogin') || '/dashboard';
+        localStorage.removeItem('redirectAfterLogin'); // Clear the stored path
+        
+        // Login successful - redirect to the saved path or dashboard
+        this.$router.push(redirect);
       } catch (err) {
         if (err.response?.status === 401) {
           this.errorMessage = 'Invalid email or password.';

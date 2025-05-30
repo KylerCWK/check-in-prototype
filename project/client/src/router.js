@@ -14,7 +14,19 @@ import CatalogPage from './components/CatalogPage.vue';
 const requireAuth = (to, from, next) => {
   const token = localStorage.getItem('token');
   if (!token) {
-    next('/login');
+    // Store the path they were trying to visit
+    localStorage.setItem('redirectAfterLogin', to.fullPath);
+    next({ path: '/login', query: { redirect: to.fullPath } });
+  } else {
+    next();
+  }
+};
+
+// Guest guard (for pages that should only be accessible when logged out)
+const requireGuest = (to, from, next) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    next('/dashboard');
   } else {
     next();
   }
@@ -23,13 +35,20 @@ const requireAuth = (to, from, next) => {
 const routes = [
   { path: '/', component: HomePage },
   { path: '/qrcode', component: QRCodeGenerator, beforeEnter: requireAuth },
-  { path: '/login', component: LoginPage },
-  { path: '/register', component: RegisterPage },
+  { path: '/login', component: LoginPage, beforeEnter: requireGuest },
+  { path: '/register', component: RegisterPage, beforeEnter: requireGuest },
   { path: '/about', component: AboutPage },
-  { path: '/pricing', component: PricingPage },  { path: '/api', component: APIPage },
+  { path: '/pricing', component: PricingPage },
+  { path: '/api', component: APIPage },
   { path: '/admin', component: AdminDashboard, beforeEnter: requireAuth },
   { path: '/dashboard', component: UserDashboard, beforeEnter: requireAuth },
-  { path: '/catalog', component: CatalogPage },
+  { path: '/catalog', component: CatalogPage, beforeEnter: requireAuth },
+  { 
+    path: '/recommended', 
+    component: CatalogPage, // Using the same component for now with different props
+    beforeEnter: requireAuth,
+    props: { recommendedMode: true }
+  },
   { path: '/:catchAll(.*)', redirect: '/' }
 ];
 
