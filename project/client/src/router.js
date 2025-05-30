@@ -26,11 +26,10 @@ const routes = [
   { path: '/login', component: LoginPage },
   { path: '/register', component: RegisterPage },
   { path: '/about', component: AboutPage },
-  { path: '/pricing', component: PricingPage },
-  { path: '/api', component: APIPage },
+  { path: '/pricing', component: PricingPage },  { path: '/api', component: APIPage },
   { path: '/admin', component: AdminDashboard, beforeEnter: requireAuth },
   { path: '/dashboard', component: UserDashboard, beforeEnter: requireAuth },
-  { path: '/catalog', component: CatalogPage, beforeEnter: requireAuth },
+  { path: '/catalog', component: CatalogPage },
   { path: '/:catchAll(.*)', redirect: '/' }
 ];
 

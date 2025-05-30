@@ -9,21 +9,31 @@
         </div>
       </router-link>
       <div class="nav-links">
+        <router-link to="/catalog" class="nav-link">Catalog</router-link>
         <router-link to="/about" class="nav-link">About</router-link>
         <router-link to="/pricing" class="nav-link">Pricing</router-link>
         <router-link to="/api" class="nav-link">API</router-link>
         
         <!-- Show these links if user is not logged in -->
         <template v-if="!isLoggedIn">
-          <router-link to="/register" class="nav-link">Sign Up</router-link>
-          <router-link to="/login" class="nav-link">Login</router-link>
+          <router-link to="/register" class="nav-link sign-up">Sign Up</router-link>
+          <div class="login-container">
+            <router-link to="/login" class="nav-link login-btn">Login</router-link>
+            <!-- Coming soon: Institution login option -->
+            <div class="login-dropdown">
+              <router-link to="/login" class="dropdown-item">Individual</router-link>
+              <router-link to="/login?type=institution" class="dropdown-item institution-login">
+                Institution <span class="coming-soon">Soon</span>
+              </router-link>
+            </div>
+          </div>
         </template>
         
         <!-- Show these links if user is logged in -->
         <template v-else>
           <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
           <router-link to="/qrcode" class="nav-link">Scan QR</router-link>
-          <a href="#" class="nav-link" @click.prevent="logout">Logout</a>
+          <a href="#" class="nav-link logout-btn" @click.prevent="logout">Sign Out</a>
         </template>
       </div>
     </div>
@@ -133,6 +143,101 @@ export default {
   background: rgba(255,255,255,0.13);
   color: #fec601;
 }
+
+.login-btn {
+  background-color: #fec601;
+  color: #2364AA;
+  padding: 0.5rem 1.2rem;
+  font-weight: 600;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.login-btn:hover {
+  background-color: #ffd74d;
+  color: #2364AA;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.sign-up {
+  border: 2px solid #fec601;
+  color: #fec601;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+}
+
+.sign-up:hover {
+  background-color: rgba(254, 198, 1, 0.15);
+}
+
+.logout-btn {
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.logout-btn::before {
+  content: "⎋";
+  font-size: 1.1em;
+}
+
+.login-container {
+  position: relative;
+}
+
+.login-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  width: 140px;
+  display: none;
+  z-index: 100;
+  margin-top: 5px;
+}
+
+.login-container:hover .login-dropdown {
+  display: block;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: #333;
+  font-size: 0.95rem;
+  border-bottom: 1px solid #eee;
+  transition: background 0.2s;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: #f5f5f5;
+  color: #2364AA;
+}
+
+.institution-login {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.coming-soon {
+  font-size: 0.7rem;
+  background-color: #3da5d9;
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
 @media (max-width: 900px) {
   .nav-container {
     flex-direction: column;

@@ -72,6 +72,10 @@ const startServer = (port) => {
 const authRoutes = require('./src/routes/auth');
 app.use('/api/auth', authRoutes);
 
+// Mount catalog routes
+const catalogRoutes = require('./src/routes/catalog');
+app.use('/api/catalog', catalogRoutes);
+
 // Start the server asynchronously and handle any errors
 startServer(PORT).catch(err => {
   console.error(`Failed to start server: ${err.message}`);
