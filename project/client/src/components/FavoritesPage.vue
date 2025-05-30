@@ -24,6 +24,7 @@
             <h3>{{ book.title }}</h3>
             <p>{{ book.author }}</p>
             <p v-if="viewMode === 'list' && book.description">{{ truncate(book.description, 150) }}</p>
+            <button class="unfavorite-button" @click="removeFromFavorites(book._id)">❌ Remove</button>
           </div>
         </div>
       </div>
@@ -48,6 +49,11 @@ export default {
       favorites.value = JSON.parse(localStorage.getItem('favorites') || '[]');
     };
 
+    const removeFromFavorites = (bookId) => {
+      favorites.value = favorites.value.filter(book => book._id !== bookId);
+      localStorage.setItem('favorites', JSON.stringify(favorites.value));
+    };
+
     const truncate = (text, maxLength) => {
       if (!text) return '';
       return text.length <= maxLength ? text : text.slice(0, maxLength) + '...';
@@ -60,7 +66,8 @@ export default {
     return {
       favorites,
       viewMode,
-      truncate
+      truncate,
+      removeFromFavorites
     };
   }
 };
@@ -68,7 +75,7 @@ export default {
 
 <style scoped>
 .favorites-page {
-  padding: 20px;
+  padding: 0px;
   background-color: #f9f9f9;
 }
 
@@ -114,5 +121,19 @@ export default {
   height: 150px;
   object-fit: cover;
   margin-right: 10px;
+}
+
+.unfavorite-button {
+  margin-top: 10px;
+  background-color: #ffdddd;
+  color: #a00;
+  border: 1px solid #a00;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.unfavorite-button:hover {
+  background-color: #ffcccc;
 }
 </style>
