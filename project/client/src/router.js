@@ -50,8 +50,8 @@ const routes = [
     beforeEnter: requireAuth,
     props: { recommendedMode: true }
   },
-  { path: '/:catchAll(.*)', redirect: '/' },
-  { path: '/favorites', component: FavoritesPage, beforeEnter: requireAuth }
+  { path: '/favorites', component: FavoritesPage, beforeEnter: requireAuth },
+  { path: '/:catchAll(.*)', redirect: '/' }
 ];
 
 const router = createRouter({
