@@ -76,6 +76,18 @@ app.use('/api/auth', authRoutes);
 const catalogRoutes = require('./src/routes/catalog');
 app.use('/api/catalog', catalogRoutes);
 
+// Mount recommendation routes
+const recommendationRoutes = require('./src/routes/recommendations');
+app.use('/api/recommendations', recommendationRoutes);
+
+// Mount favorites routes
+const favoritesRoutes = require('./src/routes/favorites');
+app.use('/api/favorites', favoritesRoutes);
+
+// Mount tracking routes
+const trackingRoutes = require('./src/routes/tracking');
+app.use('/api/tracking', trackingRoutes);
+
 // Start the server asynchronously and handle any errors
 startServer(PORT).catch(err => {
   console.error(`Failed to start server: ${err.message}`);

@@ -16,6 +16,21 @@ const ReadingProfileSchema = new mongoose.Schema({
             enum: ['want_to_read', 'reading', 'completed', 'abandoned'],
             default: 'want_to_read'
         },
+        favorite: {
+            type: Boolean,
+            default: false
+        },
+        viewCount: {
+            type: Number,
+            default: 0
+        },
+        lastViewed: {
+            type: Date
+        },
+        totalViewDuration: {
+            type: Number,
+            default: 0 // in seconds
+        },
         progress: {
             pagesRead: Number,
             timeSpent: Number, // in minutes

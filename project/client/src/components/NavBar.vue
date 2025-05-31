@@ -31,13 +31,16 @@
         </template>
         
         <!-- Links for logged in users -->
-        <template v-else>
-          <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
+        <template v-else>          <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
           <router-link to="/profile" class="nav-link">My Profile</router-link>
           <router-link to="/qrcode" class="nav-link">Scan QR</router-link>
-          <router-link to="/recommended" class="nav-link ai-nav-link">
-            <span class="ai-nav-icon">🤖</span>
-            My Recommendations
+          <router-link to="/favorites" class="nav-link favorites-nav-link">
+            <span class="favorites-nav-icon">❤️</span>
+            My Favorites
+          </router-link>
+          <router-link to="/recommendations" class="nav-link ai-nav-link">
+            <span class="ai-nav-icon">✨</span>
+            Recommendations
           </router-link>
           <div class="user-menu" @mouseenter="showDropdown = true" @mouseleave="hideDropdownWithDelay">
             <button class="user-menu-btn">

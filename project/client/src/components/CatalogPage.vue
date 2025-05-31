@@ -88,7 +88,7 @@
               <div class="book-actions">
                 <button class="favorite-btn" title="Add to favorites" @click="addToFavorites(book)">❤️
                 </button>
-                <button class="info-btn" title="View details">ℹ️</button>
+                <button class="info-btn" title="View details" @click="openBookDetails(book)">ℹ️</button>
               </div>
             </div>
             <div class="book-info">
@@ -133,7 +133,7 @@
                   <button class="list-action-btn" title="Add to favorites" @click="addToFavorites(book)">
                     ❤️
                   </button>
-                  <button class="list-action-btn" title="View details">ℹ️</button>
+                  <button class="list-action-btn" title="View details" @click="openBookDetails(book)">ℹ️</button>
                 </div>
               </div>
               <p class="author">{{ book.author }}</p>
@@ -195,6 +195,57 @@
           Next &raquo;
         </button>
       </div>
+      
+      <!-- Book Details Modal -->
+      <div v-if="selectedBook" class="modal-overlay" @click.self="closeBookDetails">
+        <div class="modal-content">
+          <div class="modal-close" @click="closeBookDetails">&times;</div>
+          
+          <div class="book-details">
+            <div class="book-details-header">
+              <div class="book-details-cover">
+                <img :src="selectedBook.coverUrl || '/default-cover.png'" :alt="selectedBook.title" @error="handleImageError" />
+              </div>
+              
+              <div class="book-details-info">
+                <h2>{{ selectedBook.title }}</h2>
+                <p class="author">by {{ selectedBook.author }}</p>
+                <div class="genres">
+                  <span v-for="(genre, index) in selectedBook.genres" :key="genre"
+                    :class="['genre-tag', `genre-color-${index % 5}`]">
+                    {{ genre }}
+                  </span>
+                </div>
+                <div class="stats">
+                  <span><i class="icon">👁️</i> {{ selectedBook.stats.viewCount }}</span>
+                  <span><i class="icon">⭐</i> {{ selectedBook.stats.rating || 'N/A' }}</span>
+                  <span title="Reading complexity"><i class="icon">📊</i> {{ getComplexityLevel(selectedBook) }}</span>
+                  <span title="Estimated reading time"><i class="icon">⏱️</i> {{ getReadingTime(selectedBook) }}</span>
+                </div>
+                <div class="actions">
+                  <button class="action-btn primary" @click="addToFavorites(selectedBook)">
+                    Add to Favorites ❤️
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="book-description">
+              <h3>Description</h3>
+              <p>{{ selectedBook.description || 'No description available.' }}</p>
+            </div>
+            
+            <div class="book-ai-insights">
+              <h3>AI Insights</h3>
+              <p>{{ getAiSummary(selectedBook) }}</p>
+              <div class="ai-tags">
+                <span class="ai-tag">{{ getAiMoodTag(selectedBook) }}</span>
+                <span class="ai-reading-level">{{ getReadingLevel(selectedBook) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -203,6 +254,7 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import NavBar from './NavBar.vue';
 import axios from 'axios';
+import { trackBookView } from '../api';
 
 export default {
   name: 'CatalogPage',
@@ -234,68 +286,40 @@ export default {
       'Biography', 'Self Help', 'Contemporary', 'Fiction'
     ]);
 
-    // AI placeholder functions
-    const getAiSummary = (book) => {
-      // Placeholder for AI-generated summary
-      return book.aiAnalysis?.summary ||
-        "AI analysis will provide a personalized summary based on your reading preferences and the book's content.";
+    const selectedBook = ref(null);
+    const viewStartTime = ref(null);
+    
+    const showBookDetails = (book) => {
+      selectedBook.value = book;
+      viewStartTime.value = Date.now();
+      // Track the view immediately to increment view count
+      trackView(book._id, 0);
     };
-
-    const getAiMoodTag = (book) => {
-      // Placeholder for AI-detected mood/theme
-      const moods = ['Thought-provoking', 'Inspiring', 'Adventurous', 'Educational', 'Heartwarming'];
-
-      if (book.aiAnalysis?.moodTags?.length) {
-        return book.aiAnalysis.moodTags[0];
+    
+    const closeBookDetails = () => {
+      if (selectedBook.value && viewStartTime.value) {
+        // Calculate view duration in seconds when closing details
+        const viewDuration = Math.round((Date.now() - viewStartTime.value) / 1000);
+        trackView(selectedBook.value._id, viewDuration);
       }
-
-      // Generate a consistent pseudo-random mood based on book title
-      const titleSum = book.title.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-      return moods[titleSum % moods.length];
+      selectedBook.value = null;
+      viewStartTime.value = null;
     };
-
-    const getComplexityLevel = (book) => {
-      // Placeholder for AI-determined complexity
-      if (book.aiAnalysis?.complexityScore) {
-        const score = book.aiAnalysis.complexityScore;
-        if (score < 3) return 'Easy';
-        if (score < 7) return 'Medium';
-        return 'Advanced';
+    
+    const trackView = async (bookId, viewDuration) => {
+      try {
+        await trackBookView(bookId, viewDuration);
+        // If it's a short view (initial tracking), don't update the UI
+        if (viewDuration > 0) {
+          // Update the local view count for the book in the UI
+          const book = books.value.find(b => b._id === bookId);
+          if (book && book.stats) {
+            book.stats.viewCount = (book.stats.viewCount || 0) + 1;
+          }
+        }
+      } catch (error) {
+        console.error('Error tracking book view:', error);
       }
-
-      // Random placeholder based on book title length
-      const levels = ['Easy', 'Medium', 'Advanced'];
-      const titleLength = book.title.length;
-      return levels[titleLength % levels.length];
-    };
-
-    const getReadingLevel = (book) => {
-      // Placeholder for reading level
-      const levels = ['Elementary', 'Middle School', 'High School', 'College', 'Professional'];
-
-      if (book.metadata?.readingLevel) {
-        return book.metadata.readingLevel;
-      }
-
-      // Generate a consistent pseudo-random level based on author name
-      const authorSum = book.author.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-      return levels[authorSum % levels.length];
-    };
-
-    const getReadingTime = (book) => {
-      // Placeholder for AI-estimated reading time
-      if (book.aiFeatures?.readingTime) {
-        return book.aiFeatures.readingTime;
-      }
-
-      // Generate placeholder based on page count if available
-      const pageCount = book.metadata?.pageCount || 0;
-      if (pageCount > 0) {
-        const hours = Math.round(pageCount / 30); // Approx 30 pages per hour
-        return hours <= 1 ? '< 1 hr' : `~${hours} hrs`;
-      }
-
-      return '3-5 hrs'; // Default placeholder
     };
 
     // Compute displayed page numbers for pagination
@@ -440,6 +464,77 @@ export default {
       }
     };
 
+    const openBookDetails = (book) => {
+      showBookDetails(book);
+    };
+
+    const closeBookDetails = () => {
+      selectedBook.value = null;
+    };
+
+    // Update Grid and List display to include book details view
+    const handleBookItemClick = (book) => {
+      showBookDetails(book);
+    };
+    
+    // Add click handlers to grid and list view items
+    const updateBookClickHandlers = () => {
+      // In grid view
+      const gridItems = document.querySelectorAll('.book-card');
+      gridItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+          if (!e.target.closest('.book-actions')) {
+            const bookId = item.getAttribute('data-book-id');
+            const book = books.value.find(b => b._id === bookId);
+            if (book) showBookDetails(book);
+          }
+        });
+      });
+      
+      // In list view
+      const listItems = document.querySelectorAll('.book-list-item');
+      listItems.forEach(item => {
+        const infoBtn = item.querySelector('.list-action-btn[title="View details"]');
+        if (infoBtn) {
+          infoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const bookId = item.getAttribute('data-book-id');
+            const book = books.value.find(b => b._id === bookId);
+            if (book) showBookDetails(book);
+          });
+        }
+      });
+    };
+    
+    // Call this after books are loaded
+    watch(books, () => {
+      // Use nextTick to ensure DOM is updated
+      setTimeout(updateBookClickHandlers, 100);
+    });
+
+    // Add book id data attribute to templates
+    const addBookIds = () => {
+      setTimeout(() => {
+        const gridItems = document.querySelectorAll('.book-card');
+        gridItems.forEach(item => {
+          const index = Array.from(item.parentNode.children).indexOf(item);
+          if (books.value[index]) {
+            item.setAttribute('data-book-id', books.value[index]._id);
+          }
+        });
+        
+        const listItems = document.querySelectorAll('.book-list-item');
+        listItems.forEach(item => {
+          const index = Array.from(item.parentNode.children).indexOf(item);
+          if (books.value[index]) {
+            item.setAttribute('data-book-id', books.value[index]._id);
+          }
+        });
+      }, 100);
+    };
+
+    watch(books, addBookIds);
+    watch(viewMode, () => setTimeout(addBookIds, 100));
 
     return {
       books,
@@ -468,7 +563,12 @@ export default {
       getComplexityLevel,
       getReadingLevel,
       getReadingTime,
-      addToFavorites
+      addToFavorites,
+      openBookDetails,
+      closeBookDetails,
+      selectedBook,
+      showBookDetails,
+      handleBookItemClick
     };
   }
 };
@@ -1098,6 +1198,132 @@ export default {
   background: #0056b3;
 }
 
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 90%;
+  max-width: 800px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.4s ease-out;
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  color: #333;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: #007bff;
+}
+
+.book-details {
+  padding: 20px;
+}
+
+.book-details-header {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.book-details-cover {
+  flex: 0 0 150px;
+  height: 225px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.book-details-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-details-info {
+  flex: 1;
+}
+
+.book-details-info h2 {
+  font-size: 22px;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.book-details-info .author {
+  color: #666;
+  margin: 0 0 10px 0;
+  font-style: italic;
+}
+
+.book-details-info .genres {
+  margin: 10px 0;
+}
+
+.book-details-info .stats {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.book-details-info .actions {
+  margin-top: 10px;
+}
+
+.action-btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.action-btn.primary {
+  background: #007bff;
+  color: white;
+}
+
+.action-btn.secondary {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.action-btn:hover {
+  background: #0056b3;
+}
+
+.book-description {
+  margin: 20px 0;
+}
+
+.book-ai-insights {
+  margin: 20px 0;
+}
+
+.modal-content {
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .search-bar {
@@ -1136,6 +1362,10 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+
+  .modal-content {
+    width: 95%;
   }
 }
 

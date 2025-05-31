@@ -10,6 +10,7 @@ import AdminDashboard from './components/AdminDashboard.vue';
 import UserDashboard from './components/UserDashboard.vue';
 import CatalogPage from './components/CatalogPage.vue';
 import FavoritesPage from './components/FavoritesPage.vue';
+import RecommendationsPage from './components/RecommendationsPage.vue';
 
 // Authentication guard
 const requireAuth = (to, from, next) => {
@@ -44,12 +45,8 @@ const routes = [
   { path: '/admin', component: AdminDashboard, beforeEnter: requireAuth },
   { path: '/dashboard', component: UserDashboard, beforeEnter: requireAuth },
   { path: '/catalog', component: CatalogPage, beforeEnter: requireAuth },
-  { 
-    path: '/recommended', 
-    component: CatalogPage, // Using the same component for now with different props
-    beforeEnter: requireAuth,
-    props: { recommendedMode: true }
-  },
+  { path: '/favorites', component: FavoritesPage, beforeEnter: requireAuth },
+  { path: '/recommendations', component: RecommendationsPage, beforeEnter: requireAuth },
   { path: '/favorites', component: FavoritesPage, beforeEnter: requireAuth },
   { path: '/:catchAll(.*)', redirect: '/' }
 ];

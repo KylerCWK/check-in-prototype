@@ -105,3 +105,54 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// Recommendation API calls
+export const getRecommendations = async (limit = 10) => {
+  const response = await api.get(`/api/recommendations?limit=${limit}`);
+  return response.data;
+};
+
+export const getDailyRecommendation = async () => {
+  const response = await api.get('/api/recommendations/daily');
+  return response.data;
+};
+
+export const getNewReleases = async (limit = 5) => {
+  const response = await api.get(`/api/recommendations/new-releases?limit=${limit}`);
+  return response.data;
+};
+
+export const getSimilarBooks = async (bookId, limit = 5) => {
+  const response = await api.get(`/api/recommendations/similar/${bookId}?limit=${limit}`);
+  return response.data;
+};
+
+export const updateUserAIProfile = async () => {
+  const response = await api.put('/api/recommendations/profile');
+  return response.data;
+};
+
+// Favorite books API calls
+export const getFavorites = async () => {
+  const response = await api.get('/api/favorites');
+  return response.data;
+};
+
+export const addToFavorites = async (bookId) => {
+  const response = await api.post('/api/favorites', { bookId });
+  return response.data;
+};
+
+export const removeFromFavorites = async (bookId) => {
+  const response = await api.delete(`/api/favorites/${bookId}`);
+  return response.data;
+};
+
+// Book view tracking API for improving recommendations
+export const trackBookView = async (bookId, viewDuration) => {
+  const response = await api.post('/api/tracking/book-view', { 
+    bookId, 
+    viewDuration 
+  });
+  return response.data;
+};
