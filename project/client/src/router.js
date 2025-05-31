@@ -36,12 +36,12 @@ const requireGuest = (to, from, next) => {
 
 const routes = [
   { path: '/', component: HomePage },
-  { path: '/qrcode', component: QRCodeGenerator, beforeEnter: requireAuth },
   { path: '/login', component: LoginPage, beforeEnter: requireGuest },
   { path: '/register', component: RegisterPage, beforeEnter: requireGuest },
   { path: '/about', component: AboutPage },
   { path: '/pricing', component: PricingPage },
   { path: '/api', component: APIPage },
+  { path: '/qrcode', component: QRCodeGenerator, beforeEnter: requireAuth },
   { path: '/admin', component: AdminDashboard, beforeEnter: requireAuth },
   { path: '/dashboard', component: UserDashboard, beforeEnter: requireAuth },
   { path: '/catalog', component: CatalogPage, beforeEnter: requireAuth },

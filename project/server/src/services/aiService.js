@@ -5,7 +5,8 @@
 
 const mongoose = require('mongoose');
 const Book = mongoose.model('Book');
-const ReadingProfile = mongoose.model('ReadingProfile');
+// const ReadingProfile = mongoose.model('ReadingProfile');
+const ReadingProfile = require('../models/ReadingProfile');
 const User = mongoose.model('User');
 
 /**

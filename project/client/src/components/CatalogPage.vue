@@ -286,6 +286,7 @@ export default {
       'Biography', 'Self Help', 'Contemporary', 'Fiction'
     ]);
 
+    // Modal view to show book details
     const selectedBook = ref(null);
     const viewStartTime = ref(null);
     
@@ -306,8 +307,59 @@ export default {
       viewStartTime.value = null;
     };
     
+    // AI Utility functions
+    const getAiSummary = (book) => {
+      // Return AI-generated summary or a default message
+      return book.aiSummary || "This book features themes and content that might interest readers who enjoy similar works in this genre.";
+    };
+
+    const getAiMoodTag = (book) => {
+      // Return AI-generated mood tag or a default
+      const possibleMoods = ["Inspirational", "Mysterious", "Thrilling", "Heartwarming", "Thought-provoking", "Adventurous"];
+      return book.aiMoodTag || possibleMoods[Math.floor(Math.random() * possibleMoods.length)];
+    };
+
+    const getComplexityLevel = (book) => {
+      // Return AI-generated complexity level or a default
+      const levels = ["Easy", "Moderate", "Advanced"];
+      return book.complexityLevel || levels[Math.floor(Math.random() * levels.length)];
+    };
+
+    const getReadingLevel = (book) => {
+      // Return AI-generated reading level or a default
+      const levels = ["General", "Young Adult", "Academic", "Professional"];
+      return book.readingLevel || levels[Math.floor(Math.random() * levels.length)];
+    };
+
+    const getReadingTime = (book) => {
+      // Estimate reading time based on page count if available or generate a default
+      if (book.pageCount) {
+        const mins = book.pageCount * 2; // Assuming 2 mins per page on average
+        if (mins < 60) return `${mins} min`;
+        const hours = Math.floor(mins / 60);
+        return `${hours} hr ${mins % 60} min`;
+      }
+      // Default time ranges
+      const times = ["2-3 hrs", "4-5 hrs", "6-8 hrs", "10+ hrs"];
+      return book.readingTime || times[Math.floor(Math.random() * times.length)];
+    };
+    
     const trackView = async (bookId, viewDuration) => {
       try {
+        // Check if token exists in localStorage before making the API call
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.log('User is not logged in, skipping view tracking');
+          // Still update the UI for a better user experience
+          if (viewDuration > 0) {
+            const book = books.value.find(b => b._id === bookId);
+            if (book && book.stats) {
+              book.stats.viewCount = (book.stats.viewCount || 0) + 1;
+            }
+          }
+          return;
+        }
+        
         await trackBookView(bookId, viewDuration);
         // If it's a short view (initial tracking), don't update the UI
         if (viewDuration > 0) {
@@ -466,10 +518,6 @@ export default {
 
     const openBookDetails = (book) => {
       showBookDetails(book);
-    };
-
-    const closeBookDetails = () => {
-      selectedBook.value = null;
     };
 
     // Update Grid and List display to include book details view
