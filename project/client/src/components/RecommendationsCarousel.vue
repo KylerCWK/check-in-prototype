@@ -37,20 +37,21 @@
       <button class="carousel-control prev" @click="scrollLeft" :disabled="atStart">
         <span>❮</span>
       </button>
-      
-      <div class="carousel-content" ref="carouselRef">
+        <div class="carousel-content" ref="carouselRef">
         <div 
           v-for="(book, index) in books" 
-          :key="book._id || index" 
+          :key="book._id || `${book.title}-${book.author}-${index}`" 
           class="carousel-item"
         >
-          <div class="book-card">
-            <div class="book-cover-container">
+          <div class="book-card">            <div class="book-cover-container">
               <img 
                 :src="book.coverUrl || '/default-cover.png'" 
                 :alt="book.title"
                 class="book-cover"
+                :data-key="book._id || `${book.title}-${book.author}-${index}`"
                 @error="handleImageError"
+                @load="handleImageLoad"
+                :class="{ 'image-loading': imageStates[book._id || `${book.title}-${book.author}-${index}`] === 'loading' }"
               />
               <div class="book-actions">
                 <button class="info-btn" @click="viewDetails(book)" title="View details">ℹ️</button>
@@ -131,13 +132,29 @@ export default {
       type: Boolean,
       default: true
     }
-  },
-  data() {
+  },  data() {
     return {
       atStart: true,
       atEnd: false,
-      scrollAmount: 250
+      scrollAmount: 250,
+      imageStates: {} // Track image loading states
     };
+  },
+  watch: {
+    books: {
+      handler(newBooks) {
+        // Initialize loading states for new books
+        if (newBooks && newBooks.length > 0) {
+          newBooks.forEach((book, index) => {
+            const key = book._id || `${book.title}-${book.author}-${index}`;
+            if (!this.imageStates[key]) {
+              this.$set(this.imageStates, key, 'loading');
+            }
+          });
+        }
+      },
+      immediate: true
+    }
   },
   methods: {
     scrollLeft() {
@@ -164,10 +181,19 @@ export default {
       
       this.atStart = container.scrollLeft <= 5;
       this.atEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 5;
-    },
-    handleImageError(e) {
+    },    handleImageError(e) {
+      const key = e.target.getAttribute('data-key');
+      if (key) {
+        this.$set(this.imageStates, key, 'error');
+      }
       e.target.src = '/default-cover.png';
-    },    viewDetails(book) {
+    },
+    handleImageLoad(e) {
+      const key = e.target.getAttribute('data-key');
+      if (key) {
+        this.$set(this.imageStates, key, 'loaded');
+      }
+    },viewDetails(book) {
       // Send the view event with the book
       this.$emit('view-details', book);
     },
@@ -310,7 +336,23 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s;
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+.book-cover.image-loading {
+  opacity: 0.7;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .book-card:hover .book-cover {
