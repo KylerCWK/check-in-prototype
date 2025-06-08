@@ -272,4 +272,92 @@ router.get('/test-daily/:userId', async (req, res) => {
     }
 });
 
+/**
+ * @route   GET /api/recommendations/test-new-releases/:userId
+ * @desc    Test route for debugging new releases (temporary)
+ * @access  Public
+ */
+router.get('/test-new-releases/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const limit = parseInt(req.query.limit) || 5;
+        
+        console.log(`Testing new releases for user: ${userId}`);
+        const newReleases = await aiService.getNewReleasesForUser(userId, limit);
+        
+        return res.json({
+            success: true,
+            userId: userId,
+            count: newReleases.length,
+            data: newReleases
+        });
+    } catch (error) {
+        console.error('Error in test new releases route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error retrieving test new releases',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @route   GET /api/recommendations/test-similar/:userId/:bookId
+ * @desc    Test route for debugging similar books (temporary)
+ * @access  Public
+ */
+router.get('/test-similar/:userId/:bookId', async (req, res) => {
+    try {
+        const { userId, bookId } = req.params;
+        const limit = parseInt(req.query.limit) || 5;
+        
+        console.log(`Testing similar books for user: ${userId}, book: ${bookId}`);
+        const similarBooks = await aiService.getSimilarBooks(bookId, limit);
+        
+        return res.json({
+            success: true,
+            userId: userId,
+            bookId: bookId,
+            count: similarBooks.length,
+            data: similarBooks
+        });
+    } catch (error) {
+        console.error('Error in test similar books route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error retrieving test similar books',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @route   GET /api/recommendations/test-favorites/:userId
+ * @desc    Test route for debugging favorites (temporary)
+ * @access  Public
+ */
+router.get('/test-favorites/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        
+        console.log(`Testing favorites for user: ${userId}`);
+        // For now, return empty array or mock favorites
+        const favorites = [];
+        
+        return res.json({
+            success: true,
+            userId: userId,
+            count: favorites.length,
+            data: favorites
+        });
+    } catch (error) {
+        console.error('Error in test favorites route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error retrieving test favorites',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

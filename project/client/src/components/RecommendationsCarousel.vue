@@ -139,8 +139,7 @@ export default {
       scrollAmount: 250,
       imageStates: {} // Track image loading states
     };
-  },
-  watch: {
+  },  watch: {
     books: {
       handler(newBooks) {
         // Initialize loading states for new books
@@ -148,7 +147,8 @@ export default {
           newBooks.forEach((book, index) => {
             const key = book._id || `${book.title}-${book.author}-${index}`;
             if (!this.imageStates[key]) {
-              this.$set(this.imageStates, key, 'loading');
+              // Vue 3 way to set reactive data
+              this.imageStates[key] = 'loading';
             }
           });
         }
@@ -184,14 +184,16 @@ export default {
     },    handleImageError(e) {
       const key = e.target.getAttribute('data-key');
       if (key) {
-        this.$set(this.imageStates, key, 'error');
+        // Vue 3 way to set reactive data
+        this.imageStates[key] = 'error';
       }
       e.target.src = '/default-cover.png';
     },
     handleImageLoad(e) {
       const key = e.target.getAttribute('data-key');
       if (key) {
-        this.$set(this.imageStates, key, 'loaded');
+        // Vue 3 way to set reactive data
+        this.imageStates[key] = 'loaded';
       }
     },viewDetails(book) {
       // Send the view event with the book
