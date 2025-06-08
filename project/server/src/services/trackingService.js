@@ -468,9 +468,7 @@ class AdvancedTrackingService {
             topGenres: ['Fiction', 'Science Fiction', 'Mystery'],
             preferredComplexity: 'Medium'
         };
-    }
-
-    calculateEngagementLevel(userBehavior) {
+    }    calculateEngagementLevel(userBehavior) {
         const metrics = userBehavior.metrics;
         const totalInteractions = metrics.totalEvents;
         const timeSpent = metrics.totalTimeSpent;
@@ -481,6 +479,60 @@ class AdvancedTrackingService {
             return 'Medium';
         } else {
             return 'Low';
+        }
+    }    /**
+     * Update legacy tracking systems for backward compatibility
+     */
+    async updateLegacyTracking(userId, bookId, viewDuration = 0) {
+        try {
+            if (!userId || !bookId) return;
+
+            // Update ReadingProfile with book view in reading history
+            const profile = await ReadingProfile.findOneAndUpdate(
+                { user: userId },
+                { 
+                    $set: { 
+                        lastActivity: new Date() 
+                    }
+                },
+                { upsert: true, new: true }
+            );
+
+            // Find existing book in reading history or add new entry
+            const existingHistoryIndex = profile.readingHistory.findIndex(
+                h => h.book && h.book.toString() === bookId
+            );
+
+            if (existingHistoryIndex >= 0) {
+                // Update existing entry
+                profile.readingHistory[existingHistoryIndex].engagement.viewCount += 1;
+                profile.readingHistory[existingHistoryIndex].engagement.lastViewed = new Date();
+                profile.readingHistory[existingHistoryIndex].engagement.totalViewDuration += Math.max(viewDuration, 0);
+            } else {
+                // Add new entry
+                profile.readingHistory.push({
+                    book: bookId,
+                    status: 'want_to_read',
+                    engagement: {
+                        viewCount: 1,
+                        lastViewed: new Date(),
+                        totalViewDuration: Math.max(viewDuration, 0)
+                    }
+                });
+            }
+
+            await profile.save();
+
+            // Update book view count
+            await require('../models/Book').findByIdAndUpdate(
+                bookId,
+                { $inc: { 'stats.viewCount': 1 } }
+            );
+
+            console.log(`✅ Legacy tracking updated for user ${userId}, book ${bookId}`);
+        } catch (error) {
+            console.error('Error updating legacy tracking:', error);
+            // Don't throw - this shouldn't break the main tracking flow
         }
     }
 }
