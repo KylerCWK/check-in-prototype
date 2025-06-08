@@ -156,3 +156,22 @@ export const trackBookView = async (bookId, viewDuration) => {
   });
   return response.data;
 };
+
+// Contextual recommendations and analytics API calls
+export const getContextualRecommendations = async (context, limit = 10) => {
+  const response = await api.post('/api/recommendations/contextual', {
+    ...context,
+    limit
+  });
+  return response.data;
+};
+
+export const getRecommendationAnalytics = async () => {
+  const response = await api.get('/api/recommendations/analytics');
+  return response.data;
+};
+
+export const recordRecommendationEngagement = async (type) => {
+  const response = await api.post('/api/recommendations/engagement', { type });
+  return response.data;
+};

@@ -142,4 +142,134 @@ router.put('/profile', auth, async (req, res) => {
     }
 });
 
+/**
+ * @route   POST /api/recommendations/contextual
+ * @desc    Get contextual recommendations based on mood, time, and genre preferences
+ * @access  Private
+ */
+router.post('/contextual', auth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { mood, time, genres, limit = 10 } = req.body;
+        
+        const context = { mood, time, genres: genres || [] };
+        const recommendations = await aiService.getContextualRecommendations(userId, context, limit);
+        
+        return res.json({
+            success: true,
+            count: recommendations.length,
+            context: context,
+            data: recommendations
+        });
+    } catch (error) {
+        console.error('Error in contextual recommendations route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error retrieving contextual recommendations'
+        });
+    }
+});
+
+/**
+ * @route   GET /api/recommendations/analytics
+ * @desc    Get recommendation system performance analytics
+ * @access  Private
+ */
+router.get('/analytics', auth, async (req, res) => {
+    try {
+        const analytics = aiService.recommendationAnalytics.getPerformanceReport();
+        
+        return res.json({
+            success: true,
+            data: analytics
+        });
+    } catch (error) {
+        console.error('Error in analytics route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error retrieving analytics'
+        });
+    }
+});
+
+/**
+ * @route   POST /api/recommendations/engagement
+ * @desc    Record user engagement with recommendations
+ * @access  Private
+ */
+router.post('/engagement', auth, async (req, res) => {
+    try {
+        const { type } = req.body; // dailyRecommendationClicks, recommendationViews, favoritesAdded
+        
+        aiService.recommendationAnalytics.recordUserEngagement(type);
+        
+        return res.json({
+            success: true,
+            message: 'Engagement recorded'
+        });
+    } catch (error) {
+        console.error('Error recording engagement:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error recording engagement'
+        });
+    }
+});
+
+/**
+ * @route   GET /api/recommendations/test/:userId
+ * @desc    Test route for debugging recommendations (temporary)
+ * @access  Public
+ */
+router.get('/test/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const limit = parseInt(req.query.limit) || 5;
+        
+        console.log(`Testing recommendations for user: ${userId}`);
+        const recommendations = await aiService.getRecommendedBooks(userId, limit);
+        
+        return res.json({
+            success: true,
+            userId: userId,
+            count: recommendations.length,
+            data: recommendations
+        });
+    } catch (error) {
+        console.error('Error in test recommendations route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error retrieving test recommendations',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @route   GET /api/recommendations/test-daily/:userId
+ * @desc    Test route for debugging daily recommendations (temporary)
+ * @access  Public
+ */
+router.get('/test-daily/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        
+        console.log(`Testing daily recommendation for user: ${userId}`);
+        const dailyPick = await aiService.getDailyRecommendation(userId);
+        
+        return res.json({
+            success: true,
+            userId: userId,
+            data: dailyPick
+        });
+    } catch (error) {
+        console.error('Error in test daily recommendation route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error retrieving test daily recommendation',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

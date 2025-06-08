@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const Joi = require('joi');
 const User = require('../models/User');
+const ReadingProfile = require('../models/ReadingProfile');
 
 const router = express.Router();
 
@@ -85,6 +86,22 @@ router.post('/register', authLimiter, async (req, res) => {
       password: hashed,
     });
     await user.save();
+    
+    // Create a reading profile for the new user
+    try {
+      const readingProfile = new ReadingProfile({ user: user._id });
+      await readingProfile.save();
+      
+      // Link the profile to the user
+      user.readingProfile = readingProfile._id;
+      await user.save();
+      
+      console.log(`✅ Created reading profile for new user ${user._id}`);
+    } catch (profileError) {
+      console.error('Error creating reading profile for new user:', profileError);
+      // Don't fail registration if profile creation fails
+    }
+    
     res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
