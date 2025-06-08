@@ -254,7 +254,7 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import NavBar from './NavBar.vue';
 import axios from 'axios';
-import { trackBookView } from '../api';
+import { trackBookView, addToFavorites as apiAddToFavorites } from '../api';
 
 export default {
   name: 'CatalogPage',
@@ -503,16 +503,17 @@ export default {
       }
     });
 
-    const addToFavorites = (book) => {
-      const existing = JSON.parse(localStorage.getItem('favorites') || '[]');
-      const alreadyAdded = existing.find(fav => fav._id === book._id);
-
-      if (!alreadyAdded) {
-        existing.push(book);
-        localStorage.setItem('favorites', JSON.stringify(existing));
+    const addToFavorites = async (book) => {
+      try {
+        await apiAddToFavorites(book._id);
         alert(`Added "${book.title}" to favorites.`);
-      } else {
-        alert(`"${book.title}" is already in favorites.`);
+      } catch (error) {
+        console.error('Error adding to favorites:', error);
+        if (error.response?.status === 409) {
+          alert(`"${book.title}" is already in favorites.`);
+        } else {
+          alert('Error adding book to favorites. Please try again.');
+        }
       }
     };
 

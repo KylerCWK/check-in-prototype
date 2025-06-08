@@ -35,10 +35,13 @@
         </div>
       </div>
       
-      <div class="daily-right">
-        <div class="daily-message">{{ recommendation.dailyMessage || 'Our pick for you today!' }}</div>
+      <div class="daily-right">        <div class="daily-message">{{ recommendation.dailyMessage || 'Our pick for you today!' }}</div>
         <h3 class="book-title">{{ recommendation.title }}</h3>
         <p class="book-author">by {{ recommendation.author }}</p>
+        
+        <p v-if="recommendation.publishDate" class="publish-date">
+          Published: {{ formatPublishDate(recommendation.publishDate) }}
+        </p>
         
         <p v-if="recommendation.description" class="book-description">
           {{ truncateDescription(recommendation.description, 200) }}
@@ -112,9 +115,30 @@ export default {
     },
     viewDetails(book) {
       this.$emit('view-details', book);
-    },
-    isInFavorites(bookId) {
+    },    isInFavorites(bookId) {
       return this.favorites.some(favorite => favorite._id === bookId);
+    },
+    
+    formatPublishDate(publishDate) {
+      if (!publishDate) return '';
+      
+      const date = new Date(publishDate);
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
+      const diffYears = Math.floor(diffMonths / 12);
+      
+      if (diffMonths < 6) {
+        return 'Recent release';
+      } else if (diffMonths < 12) {
+        return 'This year';
+      } else if (diffYears === 1) {
+        return 'Last year';
+      } else if (diffYears < 5) {
+        return `${diffYears} years ago`;
+      } else {
+        return date.getFullYear().toString();
+      }
     }
   }
 }
@@ -206,6 +230,13 @@ export default {
   font-size: 1rem;
   color: #666;
   margin: 0 0 1rem;
+}
+
+.publish-date {
+  font-size: 0.85rem;
+  color: #888;
+  margin: 0 0 1rem;
+  font-style: italic;
 }
 
 .book-description {

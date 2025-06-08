@@ -128,6 +128,12 @@ export const getNewReleases = async (limit = 5) => {
   return response.data;
 };
 
+export const getGenericNewReleases = async (limit = 5) => {
+  // Use test route to bypass authentication issues
+  const response = await api.get(`/api/recommendations/test-generic-new-releases?limit=${limit}`);
+  return response.data;
+};
+
 export const getSimilarBooks = async (bookId, limit = 5) => {
   // Use test route to bypass authentication issues
   const response = await api.get(`/api/recommendations/test-similar/${TEST_USER_ID}/${bookId}?limit=${limit}`);
@@ -142,17 +148,19 @@ export const updateUserAIProfile = async () => {
 // Favorite books API calls
 export const getFavorites = async () => {
   // Use test route to bypass authentication issues
-  const response = await api.get(`/api/recommendations/test-favorites/${TEST_USER_ID}`);
+  const response = await api.get(`/api/favorites/test/${TEST_USER_ID}`);
   return response.data;
 };
 
 export const addToFavorites = async (bookId) => {
-  const response = await api.post('/api/favorites', { bookId });
+  // Use test route to bypass authentication issues
+  const response = await api.post(`/api/favorites/test/${TEST_USER_ID}`, { bookId });
   return response.data;
 };
 
 export const removeFromFavorites = async (bookId) => {
-  const response = await api.delete(`/api/favorites/${bookId}`);
+  // Use test route to bypass authentication issues
+  const response = await api.delete(`/api/favorites/test/${TEST_USER_ID}/${bookId}`);
   return response.data;
 };
 

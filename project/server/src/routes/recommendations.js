@@ -360,4 +360,31 @@ router.get('/test-favorites/:userId', async (req, res) => {
     }
 });
 
+/**
+ * @route   GET /api/recommendations/test-generic-new-releases
+ * @desc    Test route for debugging generic new releases (temporary)
+ * @access  Public
+ */
+router.get('/test-generic-new-releases', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 5;
+        
+        console.log(`Testing generic new releases`);
+        const newReleases = await aiService.getGenericNewReleases(limit);
+        
+        return res.json({
+            success: true,
+            count: newReleases.length,
+            data: newReleases
+        });
+    } catch (error) {
+        console.error('Error in test generic new releases route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error retrieving test generic new releases',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

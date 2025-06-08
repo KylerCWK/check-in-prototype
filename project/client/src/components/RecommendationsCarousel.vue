@@ -73,10 +73,12 @@
                 </button>
               </div>
             </div>
-            
-            <div class="book-info">
+              <div class="book-info">
               <h4 class="book-title">{{ book.title }}</h4>
               <p class="book-author">{{ book.author }}</p>
+              <p v-if="book.publishDate" class="publish-date">
+                Published: {{ formatPublishDate(book.publishDate) }}
+              </p>
               <p v-if="book.reason" class="recommendation-reason">
                 {{ book.reason }}
               </p>
@@ -198,9 +200,30 @@ export default {
     },viewDetails(book) {
       // Send the view event with the book
       this.$emit('view-details', book);
-    },
-    isInFavorites(bookId) {
+    },    isInFavorites(bookId) {
       return this.favorites.some(favorite => favorite._id === bookId);
+    },
+    
+    formatPublishDate(publishDate) {
+      if (!publishDate) return '';
+      
+      const date = new Date(publishDate);
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
+      const diffYears = Math.floor(diffMonths / 12);
+      
+      if (diffMonths < 6) {
+        return 'Recent release';
+      } else if (diffMonths < 12) {
+        return 'This year';
+      } else if (diffYears === 1) {
+        return 'Last year';
+      } else if (diffYears < 5) {
+        return `${diffYears} years ago`;
+      } else {
+        return date.getFullYear().toString();
+      }
     }
   },
   mounted() {
@@ -422,6 +445,13 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.publish-date {
+  font-size: 0.7rem;
+  color: #888;
+  margin: 0 0 0.5rem 0;
+  font-style: italic;
 }
 
 .recommendation-reason {

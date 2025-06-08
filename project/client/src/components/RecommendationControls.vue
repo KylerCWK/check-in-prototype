@@ -40,9 +40,7 @@
             <span class="time-label">{{ time.label }}</span>
           </button>
         </div>
-      </div>
-
-      <!-- Genre Preferences -->
+      </div>      <!-- Genre Preferences -->
       <div class="control-section">
         <h5>🎭 What genres interest you today?</h5>
         <div class="genre-tags">
@@ -53,6 +51,22 @@
             @click="toggleGenre(genre)"
           >
             {{ genre }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Publication Date Preferences -->
+      <div class="control-section">
+        <h5>📅 Publication Date Preference</h5>
+        <div class="date-buttons">
+          <button 
+            v-for="dateRange in publicationDateRanges" 
+            :key="dateRange.id"
+            :class="['date-btn', { active: selectedPublicationDate === dateRange.id }]"
+            @click="selectPublicationDate(dateRange.id)"
+          >
+            <span class="date-icon">{{ dateRange.icon }}</span>
+            <span class="date-label">{{ dateRange.label }}</span>
           </button>
         </div>
       </div>
@@ -114,12 +128,12 @@ export default {
       type: Object,
       default: null
     }
-  },
-  data() {
+  },  data() {
     return {
       selectedMood: null,
       selectedTime: null,
       selectedGenres: [],
+      selectedPublicationDate: null,
       moods: [
         { id: 'adventurous', emoji: '🗺️', label: 'Adventurous' },
         { id: 'contemplative', emoji: '🤔', label: 'Thoughtful' },
@@ -133,6 +147,13 @@ export default {
         { id: 'moderate', icon: '📖', label: 'Moderate' },
         { id: 'deep', icon: '📚', label: 'Deep Dive' },
         { id: 'series', icon: '📚📚', label: 'Series Binge' }
+      ],
+      publicationDateRanges: [
+        { id: 'recent', icon: '🆕', label: 'Last 6 months' },
+        { id: 'thisYear', icon: '📅', label: 'This year' },
+        { id: 'lastFewYears', icon: '🎯', label: 'Last 3 years' },
+        { id: 'classic', icon: '📜', label: 'Classic (pre-2000)' },
+        { id: 'any', icon: '🌐', label: 'Any time period' }
       ],
       genres: [
         'Fiction', 'Fantasy', 'Science Fiction', 'Mystery', 'Thriller', 
@@ -151,8 +172,7 @@ export default {
       this.selectedTime = this.selectedTime === timeId ? null : timeId;
       this.emitPreferences();
     },
-    
-    toggleGenre(genre) {
+      toggleGenre(genre) {
       const index = this.selectedGenres.indexOf(genre);
       if (index > -1) {
         this.selectedGenres.splice(index, 1);
@@ -162,11 +182,17 @@ export default {
       this.emitPreferences();
     },
     
+    selectPublicationDate(dateRangeId) {
+      this.selectedPublicationDate = this.selectedPublicationDate === dateRangeId ? null : dateRangeId;
+      this.emitPreferences();
+    },
+    
     emitPreferences() {
       this.$emit('preferences-changed', {
         mood: this.selectedMood,
         time: this.selectedTime,
-        genres: [...this.selectedGenres]
+        genres: [...this.selectedGenres],
+        publicationDate: this.selectedPublicationDate
       });
     },
     
@@ -174,7 +200,8 @@ export default {
       this.$emit('smart-recommendations', {
         mood: this.selectedMood,
         time: this.selectedTime,
-        genres: [...this.selectedGenres]
+        genres: [...this.selectedGenres],
+        publicationDate: this.selectedPublicationDate
       });
     },
     
@@ -231,13 +258,13 @@ export default {
   font-weight: 500;
 }
 
-.mood-buttons, .time-buttons {
+.mood-buttons, .time-buttons, .date-buttons {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.75rem;
 }
 
-.mood-btn, .time-btn {
+.mood-btn, .time-btn, .date-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -252,18 +279,18 @@ export default {
   font-size: 0.9rem;
 }
 
-.mood-btn:hover, .time-btn:hover {
+.mood-btn:hover, .time-btn:hover, .date-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 
-.mood-btn.active, .time-btn.active {
+.mood-btn.active, .time-btn.active, .date-btn.active {
   background: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.6);
   box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
 }
 
-.mood-emoji, .time-icon {
+.mood-emoji, .time-icon, .date-icon {
   font-size: 1.5rem;
 }
 

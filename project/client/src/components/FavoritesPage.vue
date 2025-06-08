@@ -30,7 +30,11 @@
         </div>
       </div>
 
-      <div v-if="favorites.length" :class="['favorites-list', viewMode]">
+      <div v-if="loading" class="loading-container">
+        <div class="loading-spinner">Loading your favorites...</div>
+      </div>
+
+      <div v-else-if="favorites.length" :class="['favorites-list', viewMode]">
         <!-- Grid View -->
         <div v-if="viewMode === 'grid'" class="books-grid">
           <div v-for="book in favorites" :key="book._id" class="book-card">
@@ -107,7 +111,7 @@
         </div>
       </div>
 
-      <div v-else class="no-favorites">
+      <div v-else-if="!loading" class="no-favorites">
         <div class="no-favorites-icon">❤️</div>
         <h3>Your favorites list is empty</h3>
         <p>Books you save will appear here</p>
@@ -120,6 +124,7 @@
 <script>
 import NavBar from './NavBar.vue';
 import { ref, onMounted, watch } from 'vue';
+import { getFavorites, removeFromFavorites as apiRemoveFromFavorites } from '../api';
 
 export default {
   name: 'FavoritesPage',
@@ -127,15 +132,30 @@ export default {
   setup() {
     const favorites = ref([]);
     const viewMode = ref('grid');
+    const loading = ref(false);
 
-    const loadFavorites = () => {
-      favorites.value = JSON.parse(localStorage.getItem('favorites') || '[]');
+    const loadFavorites = async () => {
+      try {
+        loading.value = true;
+        const response = await getFavorites();
+        favorites.value = response.data || [];
+      } catch (error) {
+        console.error('Error fetching favorites:', error);
+        favorites.value = [];
+      } finally {
+        loading.value = false;
+      }
     };
 
-    const removeFromFavorites = (bookId) => {
+    const removeFromFavorites = async (bookId) => {
       if (confirm('Are you sure you want to remove this book from your favorites?')) {
-        favorites.value = favorites.value.filter(book => book._id !== bookId);
-        localStorage.setItem('favorites', JSON.stringify(favorites.value));
+        try {
+          await apiRemoveFromFavorites(bookId);
+          favorites.value = favorites.value.filter(book => book._id !== bookId);
+        } catch (error) {
+          console.error('Error removing from favorites:', error);
+          alert('Error removing book from favorites. Please try again.');
+        }
       }
     };
 
@@ -148,8 +168,8 @@ export default {
       event.target.src = '/default-cover.png';
     };
 
-    onMounted(() => {
-      loadFavorites();
+    onMounted(async () => {
+      await loadFavorites();
       
       // Load user's preferred view mode from localStorage
       const savedViewMode = localStorage.getItem('bookViewMode');
@@ -166,6 +186,7 @@ export default {
     return {
       favorites,
       viewMode,
+      loading,
       truncate,
       removeFromFavorites,
       handleImageError
@@ -447,6 +468,20 @@ export default {
 }
 
 /* No Favorites State */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  font-size: 18px;
+  color: #007bff;
+  animation: pulse 1.5s infinite alternate;
+}
+
 .no-favorites {
   display: flex;
   flex-direction: column;

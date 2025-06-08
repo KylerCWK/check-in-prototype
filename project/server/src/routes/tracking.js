@@ -67,10 +67,8 @@ router.post('/book-view', async (req, res) => {
                 referrer: req.headers.referer,
                 ...metadata
             }
-        });
-
-        // Update legacy tracking for backward compatibility
-        await this.updateLegacyTracking(userId, bookId, viewDuration);
+        });        // Update legacy tracking for backward compatibility
+        await trackingService.updateLegacyTracking(userId, bookId, viewDuration);
         
         return res.json({
             success: true,
