@@ -46,13 +46,10 @@
             <!-- INC/Company User Navigation -->
             <router-link to="/inc/dashboard" class="nav-link">Company Dashboard</router-link>
             <router-link to="/catalog" class="nav-link">Book Catalog</router-link>
-            <router-link to="/qrcode" class="nav-link">Scan QR</router-link>
           </template>
           <template v-else>
             <!-- Individual User Navigation -->
             <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
-            <router-link to="/profile" class="nav-link">My Profile</router-link>
-            <router-link to="/qrcode" class="nav-link">Scan QR</router-link>
             <router-link to="/favorites" class="nav-link favorites-nav-link">
               <span class="favorites-nav-icon">❤️</span>
               My Favorites
