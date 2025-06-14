@@ -282,13 +282,13 @@ router.post('/semantic-search', async (req, res) => {
 // Helper function to generate query embeddings
 async function generateQueryEmbedding(query) {
     try {
-        // Use the embedding service to generate embeddings
-        const embedding = await embeddingService.generateEmbedding(query);
+        // Use the embedding service to generate embeddings with correct dimensions for Atlas
+        const embedding = await embeddingService.generateEmbedding(query, { dimensions: 384 });
         return Array.isArray(embedding) ? embedding[0] : embedding;
     } catch (error) {
         console.error('Error generating query embedding:', error);
-        // Return zero vector as fallback
-        return new Array(768).fill(0);
+        // Return zero vector as fallback with correct dimensions
+        return new Array(384).fill(0);
     }
 }
 
