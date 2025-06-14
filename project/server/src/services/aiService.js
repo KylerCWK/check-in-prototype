@@ -268,78 +268,178 @@ class MLRecommendationEngine {
             recommendationAnalytics.recordRecommendationGenerated('collaborative', 0, false);
             return [];
         }
-    }
-
-    async getContentBasedRecommendations(profile, limit) {
+    }    async getContentBasedRecommendations(profile, limit) {
         try {
             if (!profile.aiProfile.vectors.primary || profile.aiProfile.vectors.primary.length === 0) {
-                return [];
+                return await this.getContentBasedRecommendationsFallback(profile, limit);
             }
 
-            // Find books with similar content using embeddings
-            const books = await Book.find({ 
-                'embeddings.combined': { $exists: true, $ne: [] },
-                'processing.embeddingsGenerated': true
-            });
+            // Use MongoDB Vector Search for improved performance and relevance
+            try {
+                const vectorSearchResults = await this.getContentBasedRecommendationsWithVectorSearch(profile, limit);
+                if (vectorSearchResults && vectorSearchResults.length > 0) {
+                    recommendationAnalytics.recordRecommendationGenerated('content', 0, true);
+                    return vectorSearchResults;
+                }
+            } catch (vectorError) {
+                console.warn('Vector search failed, falling back to similarity calculation:', vectorError);
+            }
 
-            const recommendations = books
-                .map(book => {
-                    if (!book.embeddings?.combined || book.embeddings.combined.length === 0) {
-                        return null;
-                    }
+            // Fallback to traditional similarity calculation
+            return await this.getContentBasedRecommendationsFallback(profile, limit);
 
-                    // Calculate multiple similarity scores
-                    const similarities = {};
-                    
-                    if (profile.aiProfile.vectors.primary) {
-                        similarities.primary = SimilarityCalculator.calculateCosineSimilarity(
-                            profile.aiProfile.vectors.primary,
-                            book.embeddings.combined
-                        );
-                    }
-
-                    if (book.embeddings.textual && profile.aiProfile.vectors.genre) {
-                        similarities.genre = SimilarityCalculator.calculateCosineSimilarity(
-                            profile.aiProfile.vectors.genre,
-                            book.embeddings.textual.slice(0, profile.aiProfile.vectors.genre.length)
-                        );
-                    }
-
-                    if (book.embeddings.emotional && profile.aiProfile.vectors.emotional) {
-                        similarities.emotional = SimilarityCalculator.calculateCosineSimilarity(
-                            profile.aiProfile.vectors.emotional,
-                            book.embeddings.emotional
-                        );
-                    }
-
-                    // Weighted combined score
-                    const finalScore = (
-                        (similarities.primary || 0) * 0.5 +
-                        (similarities.genre || 0) * 0.3 +
-                        (similarities.emotional || 0) * 0.2
-                    );
-
-                    return {
-                        book,
-                        score: finalScore,
-                        confidence: Object.keys(similarities).length / 3,
-                        factors: ['content_similarity', 'embedding_match'],
-                        similarities
-                    };
-                })
-                .filter(item => item && item.score > 0.4)
-                .sort((a, b) => b.score - a.score)
-                .slice(0, limit);
-
-            // Record analytics
-            recommendationAnalytics.recordRecommendationGenerated('content', 0, true);
-
-            return recommendations;
         } catch (error) {
             console.error('Error in content-based recommendations:', error);
             recommendationAnalytics.recordRecommendationGenerated('content', 0, false);
             return [];
         }
+    }
+
+    async getContentBasedRecommendationsWithVectorSearch(profile, limit) {
+        // Use MongoDB Atlas Vector Search aggregation pipeline
+        const pipeline = [
+            {
+                $vectorSearch: {
+                    index: "books_vector_index", // Vector search index name
+                    path: "embeddings.combined",
+                    queryVector: profile.aiProfile.vectors.primary,
+                    numCandidates: limit * 10, // Search more candidates for better results
+                    limit: limit * 3 // Get more results for further filtering
+                }
+            },
+            {
+                $addFields: {
+                    vectorSearchScore: { $meta: "vectorSearchScore" }
+                }
+            },
+            {
+                $match: {
+                    'processing.embeddingsGenerated': true,
+                    vectorSearchScore: { $gte: 0.5 } // Filter by minimum similarity threshold
+                }
+            },
+            // Boost based on book quality metrics
+            {
+                $addFields: {
+                    qualityBoost: {
+                        $multiply: [
+                            { $ifNull: ["$stats.rating", 3.5] },
+                            { $log10: { $add: [{ $ifNull: ["$stats.viewCount", 1] }, 1] } }
+                        ]
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    finalScore: {
+                        $add: [
+                            { $multiply: ["$vectorSearchScore", 0.7] },
+                            { $multiply: ["$qualityBoost", 0.1] },
+                            { $divide: [{ $ifNull: ["$dataQuality.completeness", 0.5] }, 10] }
+                        ]
+                    }
+                }
+            },
+            {
+                $sort: { finalScore: -1 }
+            },
+            {
+                $limit: limit
+            },
+            {
+                $project: {
+                    title: 1,
+                    author: 1,
+                    coverUrl: 1,
+                    genres: 1,
+                    description: 1,
+                    stats: 1,
+                    publishDate: 1,
+                    'aiAnalysis.themes': 1,
+                    'aiAnalysis.moodTags': 1,
+                    'aiAnalysis.complexityScore': 1,
+                    embeddings: 1,
+                    vectorSearchScore: 1,
+                    finalScore: 1
+                }
+            }
+        ];
+
+        const books = await Book.aggregate(pipeline);
+
+        return books.map(book => ({
+            book: book,
+            score: book.finalScore || book.vectorSearchScore,
+            confidence: Math.min(book.vectorSearchScore * 1.2, 1.0),
+            factors: ['vector_search', 'embedding_match', 'quality_boost'],
+            similarities: {
+                vector: book.vectorSearchScore,
+                quality: book.qualityBoost
+            }
+        }));
+    }
+
+    async getContentBasedRecommendationsFallback(profile, limit) {
+        // Traditional similarity calculation as fallback
+        const books = await Book.find({ 
+            'embeddings.combined': { $exists: true, $ne: [] },
+            'processing.embeddingsGenerated': true
+        });
+
+        const recommendations = books
+            .map(book => {
+                if (!book.embeddings?.combined || book.embeddings.combined.length === 0) {
+                    return null;
+                }
+
+                // Calculate multiple similarity scores
+                const similarities = {};
+                
+                if (profile.aiProfile.vectors.primary) {
+                    similarities.primary = SimilarityCalculator.calculateCosineSimilarity(
+                        profile.aiProfile.vectors.primary,
+                        book.embeddings.combined
+                    );
+                }
+
+                if (book.embeddings.semantic && profile.aiProfile.vectors.genre) {
+                    similarities.semantic = SimilarityCalculator.calculateCosineSimilarity(
+                        profile.aiProfile.vectors.genre,
+                        book.embeddings.semantic
+                    );
+                }
+
+                if (book.embeddings.emotional && profile.aiProfile.vectors.emotional) {
+                    similarities.emotional = SimilarityCalculator.calculateCosineSimilarity(
+                        profile.aiProfile.vectors.emotional,
+                        book.embeddings.emotional
+                    );
+                }
+
+                // Weighted combined score with multiple vector types
+                const finalScore = SimilarityCalculator.calculateWeightedSimilarity(
+                    {
+                        combined: profile.aiProfile.vectors.primary,
+                        semantic: profile.aiProfile.vectors.genre,
+                        emotional: profile.aiProfile.vectors.emotional
+                    },
+                    book.embeddings,
+                    { combined: 0.5, semantic: 0.3, emotional: 0.2 }
+                );
+
+                return {
+                    book,
+                    score: finalScore,
+                    confidence: Object.keys(similarities).length / 3,
+                    factors: ['content_similarity', 'embedding_match', 'fallback_calculation'],
+                    similarities
+                };
+            })
+            .filter(item => item && item.score > 0.4)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, limit);
+
+        return recommendations;
     }
 
     async getHybridRecommendations(profile, userBehavior, limit) {
@@ -1036,58 +1136,176 @@ const getNewReleasesForUser = async (userId, limit = 5) => {
             return genericReleases;
         }
         
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-        
         const profile = await ReadingProfile.findById(user.readingProfile._id);
         
-        // Use AI to match new releases to user preferences
-        const newBooks = await Book.find({
-            publishDate: { $gte: sixMonthsAgo },
-            'processing.embeddingsGenerated': true
-        }).sort({ publishDate: -1 });
-
-        if (!profile.aiProfile.vectors.primary || profile.aiProfile.vectors.primary.length === 0) {
-            const result = newBooks.slice(0, limit).map(book => ({
-                ...book.toObject(),
-                reason: 'Recent release'
-            }));
-            recommendationCache.set(userId, 'newReleases', result, { limit });
-            return result;
+        // Try vector search for personalized new releases
+        if (profile.aiProfile.vectors.primary && profile.aiProfile.vectors.primary.length > 0) {
+            try {
+                const vectorResults = await getNewReleasesWithVectorSearch(profile, limit);
+                if (vectorResults && vectorResults.length > 0) {
+                    recommendationCache.set(userId, 'newReleases', vectorResults, { limit });
+                    return vectorResults;
+                }
+            } catch (vectorError) {
+                console.warn('Vector search failed for new releases, falling back:', vectorError);
+            }
         }
 
-        const scoredBooks = newBooks
-            .map(book => {
-                if (!book.embeddings?.combined) return null;
-                
-                const similarity = SimilarityCalculator.calculateCosineSimilarity(
-                    profile.aiProfile.vectors.primary,
-                    book.embeddings.combined
-                );
-                
-                return {
-                    book,
-                    score: similarity,
-                    reason: 'New release matching your interests'
-                };
-            })
-            .filter(item => item && item.score > 0.3)
-            .sort((a, b) => b.score - a.score)
-            .slice(0, limit);
-
-        const result = scoredBooks.map(item => ({
-            ...item.book.toObject(),
-            recommendationScore: item.score,
-            reason: item.reason
-        }));
+        // Fallback to traditional similarity-based matching
+        return await getNewReleasesFallback(profile, limit, userId);
         
-        // Cache the result
-        recommendationCache.set(userId, 'newReleases', result, { limit });
-        return result;
     } catch (error) {
         console.error('Error in getNewReleasesForUser:', error);
         return [];
     }
+};
+
+const getNewReleasesWithVectorSearch = async (profile, limit) => {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    // Use vector search to find new releases matching user preferences
+    const pipeline = [
+        {
+            $match: {
+                publishDate: { $gte: sixMonthsAgo },
+                'processing.embeddingsGenerated': true,
+                'embeddings.combined': { $exists: true, $ne: [] }
+            }
+        },
+        {
+            $vectorSearch: {
+                index: "books_vector_index",
+                path: "embeddings.combined",
+                queryVector: profile.aiProfile.vectors.primary,
+                numCandidates: limit * 15,
+                limit: limit * 3
+            }
+        },
+        {
+            $addFields: {
+                vectorSearchScore: { $meta: "vectorSearchScore" }
+            }
+        },
+        {
+            $match: {
+                vectorSearchScore: { $gte: 0.3 } // Lower threshold for new releases
+            }
+        },
+        // Boost newer releases
+        {
+            $addFields: {
+                recencyBoost: {
+                    $divide: [
+                        { $subtract: [new Date(), "$publishDate"] },
+                        1000 * 60 * 60 * 24 * 30 // Convert to months
+                    ]
+                }
+            }
+        },
+        {
+            $addFields: {
+                normalizedRecency: {
+                    $max: [
+                        0,
+                        { $subtract: [1, { $divide: ["$recencyBoost", 6] }] } // Boost books from last 6 months
+                    ]
+                }
+            }
+        },
+        // Calculate final score with recency boost
+        {
+            $addFields: {
+                finalScore: {
+                    $add: [
+                        { $multiply: ["$vectorSearchScore", 0.8] },
+                        { $multiply: ["$normalizedRecency", 0.2] }
+                    ]
+                }
+            }
+        },
+        {
+            $sort: { finalScore: -1, publishDate: -1 }
+        },
+        {
+            $limit: limit
+        },
+        {
+            $project: {
+                title: 1,
+                author: 1,
+                coverUrl: 1,
+                genres: 1,
+                description: 1,
+                stats: 1,
+                publishDate: 1,
+                'aiAnalysis.themes': 1,
+                'aiAnalysis.moodTags': 1,
+                vectorSearchScore: 1,
+                finalScore: 1
+            }
+        }
+    ];
+
+    const books = await Book.aggregate(pipeline);
+
+    return books.map(book => ({
+        ...book,
+        recommendationScore: book.finalScore || book.vectorSearchScore,
+        reason: 'New release matching your interests',
+        searchMethod: 'vector_search'
+    }));
+};
+
+const getNewReleasesFallback = async (profile, limit, userId) => {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    // Use AI to match new releases to user preferences
+    const newBooks = await Book.find({
+        publishDate: { $gte: sixMonthsAgo },
+        'processing.embeddingsGenerated': true
+    }).sort({ publishDate: -1 });
+
+    if (!profile.aiProfile.vectors.primary || profile.aiProfile.vectors.primary.length === 0) {
+        const result = newBooks.slice(0, limit).map(book => ({
+            ...book.toObject(),
+            reason: 'Recent release',
+            searchMethod: 'chronological'
+        }));
+        recommendationCache.set(userId, 'newReleases', result, { limit });
+        return result;
+    }
+
+    const scoredBooks = newBooks
+        .map(book => {
+            if (!book.embeddings?.combined) return null;
+            
+            const similarity = SimilarityCalculator.calculateCosineSimilarity(
+                profile.aiProfile.vectors.primary,
+                book.embeddings.combined
+            );
+            
+            return {
+                book,
+                score: similarity,
+                reason: 'New release matching your interests'
+            };
+        })
+        .filter(item => item && item.score > 0.3)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit);
+
+    const result = scoredBooks.map(item => ({
+        ...item.book.toObject(),
+        recommendationScore: item.score,
+        reason: item.reason,
+        searchMethod: 'similarity_fallback'
+    }));
+    
+    // Cache the result
+    recommendationCache.set(userId, 'newReleases', result, { limit });
+    return result;
 };
 
 const getDefaultRecommendations = async (limit = 10) => {
@@ -1111,57 +1329,195 @@ const getDefaultRecommendations = async (limit = 10) => {
 const getSimilarBooks = async (bookId, limit = 5) => {
     try {
         const book = await Book.findById(bookId);
-        if (!book || !book.embeddings?.combined || book.embeddings.combined.length === 0) {
+        if (!book) {
+            return [];
+        }
+
+        // First try vector search if embeddings are available
+        if (book.embeddings?.combined && book.embeddings.combined.length > 0) {
+            try {
+                const vectorSearchResults = await getSimilarBooksWithVectorSearch(book, limit);
+                if (vectorSearchResults && vectorSearchResults.length > 0) {
+                    return vectorSearchResults;
+                }
+            } catch (vectorError) {
+                console.warn('Vector search failed for similar books, falling back:', vectorError);
+            }
+        }
+
+        // Fallback to traditional similarity calculation or genre-based
+        if (book.embeddings?.combined && book.embeddings.combined.length > 0) {
+            return await getSimilarBooksFallback(book, limit);
+        } else {
             return await getSimilarBooksByGenre(bookId, limit);
         }
-        
-        const books = await Book.find({
-            _id: { $ne: bookId },
-            'embeddings.combined': { $exists: true, $ne: [] },
-            'processing.embeddingsGenerated': true
-        });
-        
-        const similarBooks = books
-            .map(similar => {
-                const scores = {};
-                
-                // Calculate multiple similarity metrics
-                if (book.embeddings.combined && similar.embeddings.combined) {
-                    scores.combined = SimilarityCalculator.calculateCosineSimilarity(
-                        book.embeddings.combined,
-                        similar.embeddings.combined
-                    );
-                }
-                
-                if (book.embeddings.semantic && similar.embeddings.semantic) {
-                    scores.semantic = SimilarityCalculator.calculateCosineSimilarity(
-                        book.embeddings.semantic,
-                        similar.embeddings.semantic
-                    );
-                }
-                
-                const finalScore = scores.combined || 0;
-                
-                return { 
-                    book: similar, 
-                    score: finalScore,
-                    scores
-                };
-            })
-            .filter(item => item.score > 0.5)
-            .sort((a, b) => b.score - a.score)
-            .slice(0, limit);
-            
-        return similarBooks.map(item => ({
-            ...item.book.toObject(),
-            similarityScore: item.score,
-            reason: `Similar to ${book.title}`,
-            confidence: Math.min(item.score, 1)
-        }));
     } catch (error) {
         console.error('Error in getSimilarBooks:', error);
         return [];
     }
+};
+
+const getSimilarBooksWithVectorSearch = async (book, limit) => {
+    // Use MongoDB Atlas Vector Search for finding similar books
+    const pipeline = [
+        {
+            $vectorSearch: {
+                index: "books_vector_index",
+                path: "embeddings.combined",
+                queryVector: book.embeddings.combined,
+                numCandidates: limit * 10,
+                limit: limit * 2,
+                filter: {
+                    _id: { $ne: book._id } // Exclude the source book
+                }
+            }
+        },
+        {
+            $addFields: {
+                vectorSearchScore: { $meta: "vectorSearchScore" }
+            }
+        },
+        {
+            $match: {
+                'processing.embeddingsGenerated': true,
+                vectorSearchScore: { $gte: 0.6 } // Higher threshold for similarity
+            }
+        },
+        // Add semantic similarity score if available
+        {
+            $addFields: {
+                semanticSimilarity: {
+                    $cond: {
+                        if: { 
+                            $and: [
+                                { $ne: ["$embeddings.semantic", null] },
+                                { $ne: [book.embeddings.semantic, null] }
+                            ]
+                        },
+                        then: "$vectorSearchScore", // Placeholder for semantic similarity
+                        else: 0
+                    }
+                }
+            }
+        },
+        // Boost books with similar genres
+        {
+            $addFields: {
+                genreBoost: {
+                    $size: {
+                        $setIntersection: [
+                            { $ifNull: ["$genres", []] },
+                            { $literal: book.genres || [] }
+                        ]
+                    }
+                }
+            }
+        },
+        // Calculate final similarity score
+        {
+            $addFields: {
+                finalSimilarityScore: {
+                    $add: [
+                        { $multiply: ["$vectorSearchScore", 0.7] },
+                        { $multiply: ["$semanticSimilarity", 0.2] },
+                        { $multiply: [{ $divide: ["$genreBoost", 5] }, 0.1] }
+                    ]
+                }
+            }
+        },
+        {
+            $sort: { finalSimilarityScore: -1 }
+        },
+        {
+            $limit: limit
+        },
+        {
+            $project: {
+                title: 1,
+                author: 1,
+                coverUrl: 1,
+                genres: 1,
+                description: 1,
+                stats: 1,
+                publishDate: 1,
+                'aiAnalysis.themes': 1,
+                'aiAnalysis.moodTags': 1,
+                vectorSearchScore: 1,
+                finalSimilarityScore: 1,
+                genreBoost: 1
+            }
+        }
+    ];
+
+    const similarBooks = await Book.aggregate(pipeline);
+
+    return similarBooks.map(similar => ({
+        ...similar,
+        similarityScore: similar.finalSimilarityScore || similar.vectorSearchScore,
+        reason: `Similar to ${book.title}`,
+        confidence: Math.min((similar.finalSimilarityScore || similar.vectorSearchScore) * 1.1, 1),
+        searchMethod: 'vector_search'
+    }));
+};
+
+const getSimilarBooksFallback = async (book, limit) => {
+    // Traditional similarity calculation as fallback
+    const books = await Book.find({
+        _id: { $ne: book._id },
+        'embeddings.combined': { $exists: true, $ne: [] },
+        'processing.embeddingsGenerated': true
+    });
+    
+    const similarBooks = books
+        .map(similar => {
+            const scores = {};
+            
+            // Calculate multiple similarity metrics
+            if (book.embeddings.combined && similar.embeddings.combined) {
+                scores.combined = SimilarityCalculator.calculateCosineSimilarity(
+                    book.embeddings.combined,
+                    similar.embeddings.combined
+                );
+            }
+            
+            if (book.embeddings.semantic && similar.embeddings.semantic) {
+                scores.semantic = SimilarityCalculator.calculateCosineSimilarity(
+                    book.embeddings.semantic,
+                    similar.embeddings.semantic
+                );
+            }
+
+            if (book.embeddings.emotional && similar.embeddings.emotional) {
+                scores.emotional = SimilarityCalculator.calculateCosineSimilarity(
+                    book.embeddings.emotional,
+                    similar.embeddings.emotional
+                );
+            }
+            
+            // Use weighted similarity for better results
+            const finalScore = SimilarityCalculator.calculateWeightedSimilarity(
+                book.embeddings,
+                similar.embeddings,
+                { combined: 0.5, semantic: 0.3, emotional: 0.2 }
+            );
+            
+            return { 
+                book: similar, 
+                score: finalScore,
+                scores
+            };
+        })
+        .filter(item => item.score > 0.5)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit);
+        
+    return similarBooks.map(item => ({
+        ...item.book.toObject(),
+        similarityScore: item.score,
+        reason: `Similar to ${book.title}`,
+        confidence: Math.min(item.score, 1),
+        searchMethod: 'similarity_calculation'
+    }));
 };
 
 const updateUserAIProfile = async (userId) => {

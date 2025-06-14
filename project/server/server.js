@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 // require('dotenv').config({ path: './.env' });
 
@@ -12,6 +13,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, { dbName: 'qrlibrary' })
@@ -32,7 +36,6 @@ app.get('/api/health', (req, res) => {
 
 // Use any available port from a specific range if the default PORT is busy
 const fs = require('fs');
-const path = require('path');
 const configDir = path.resolve(__dirname);
 const configPath = path.join(configDir, 'server-config.json');
 
@@ -88,6 +91,18 @@ app.use('/api/favorites', favoritesRoutes);
 // Mount tracking routes
 const trackingRoutes = require('./src/routes/tracking');
 app.use('/api/tracking', trackingRoutes);
+
+// Mount company routes
+const companyRoutes = require('./src/routes/companies');
+app.use('/api/companies', companyRoutes);
+
+// Mount company QR code routes
+const companyQrRoutes = require('./src/routes/companyQr');
+app.use('/api/companies/qr', companyQrRoutes);
+
+// Mount scanning routes
+const scanningRoutes = require('./src/routes/scanning');
+app.use('/api/companies', scanningRoutes);
 
 // Start the server asynchronously and handle any errors
 startServer(PORT).catch(err => {

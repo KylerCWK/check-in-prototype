@@ -199,12 +199,37 @@ BookSchema.index({ 'processing.needsReprocessing': 1 });
 BookSchema.index({ publishDate: -1 });
 BookSchema.index({ genres: 1, 'aiAnalysis.complexityScore': 1 });
 
+// Text search index for MongoDB Atlas Search
+BookSchema.index({ 
+    title: 'text', 
+    author: 'text', 
+    description: 'text',
+    genres: 'text',
+    'aiAnalysis.themes': 'text',
+    'aiAnalysis.moodTags': 'text'
+});
+
+// Vector search index for MongoDB Atlas Vector Search (knnVector)
+// Note: This needs to be created in MongoDB Atlas UI or via mongosh
+// BookSchema.index({ 'embeddings.combined': 'knnVector' });
+
+// Traditional indexes for filtering and sorting
+BookSchema.index({ genres: 1 });
+BookSchema.index({ author: 1 });
+BookSchema.index({ publishDate: -1 });
+BookSchema.index({ 'stats.rating': -1 });
+BookSchema.index({ 'stats.viewCount': -1 });
+BookSchema.index({ 'stats.trending.daily': -1 });
+
 // Compound indexes for recommendation queries
 BookSchema.index({ 
     'embeddings.combined': 1, 
     'stats.rating': -1,
     'processing.embeddingsGenerated': 1 
 });
+
+// Geospatial index if we add location-based features
+// BookSchema.index({ location: '2dsphere' });
 
 // Methods for AI processing
 BookSchema.methods.calculateDataQuality = function() {

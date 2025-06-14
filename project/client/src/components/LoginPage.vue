@@ -61,19 +61,35 @@ export default {
           email: this.username,
           password: this.password,
         });
+        
         // Store token in localStorage
         localStorage.setItem('token', response.data.token);
         // Store email for personalization (temporary solution)
         localStorage.setItem('userEmail', this.username);
         
+        // Store company information if user is associated with a company
+        if (response.data.user.company) {
+          localStorage.setItem('currentCompany', JSON.stringify(response.data.user.company));
+        }
+        
         // Dispatch a custom event to notify components that login was successful
         window.dispatchEvent(new Event('auth:login'));
         
-        // Check if there's a redirect path stored
-        const redirect = this.$route.query.redirect || localStorage.getItem('redirectAfterLogin') || '/dashboard';
+        // Determine redirect path based on user type
+        let redirect = this.$route.query.redirect || localStorage.getItem('redirectAfterLogin');
+        
+        if (!redirect) {
+          // If user is associated with a company, redirect to INC dashboard
+          if (response.data.user.company) {
+            redirect = '/inc/dashboard';
+          } else {
+            redirect = '/dashboard';
+          }
+        }
+        
         localStorage.removeItem('redirectAfterLogin'); // Clear the stored path
         
-        // Login successful - redirect to the saved path or dashboard
+        // Login successful - redirect to the appropriate dashboard
         this.$router.push(redirect);
       } catch (err) {
         if (err.response?.status === 401) {

@@ -1,11 +1,9 @@
 const mongoose = require('mongoose');
 
-const UserBehaviorSchema = new mongoose.Schema({
-    userId: {
+const UserBehaviorSchema = new mongoose.Schema({    userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
-        unique: true
+        required: true
     },
     // Behavioral patterns derived from tracking events
     behaviorPatterns: {
@@ -100,3 +98,4 @@ UserBehaviorSchema.index({ lastAnalyzed: 1 });
 UserBehaviorSchema.index({ 'mlInsights.userCluster': 1 });
 
 module.exports = mongoose.model('UserBehavior', UserBehaviorSchema);
+ 

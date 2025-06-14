@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
     email: { 
         type: String, 
-        required: true, 
-        unique: true 
+        required: true
     },
     password: { 
         type: String, 
@@ -19,6 +18,47 @@ const userSchema = new mongoose.Schema({
     readingProfile: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'ReadingProfile'
+    },
+    companyAffiliations: [{
+        company: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Company'
+        },
+        role: {
+            type: String,
+            enum: ['admin', 'librarian', 'associate', 'member'],
+            default: 'member'
+        },
+        department: String,
+        joinDate: {
+            type: Date,
+            default: Date.now
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'approved', 'denied'],
+            default: 'pending'
+        },
+        isDefault: {
+            type: Boolean,
+            default: false
+        }
+    }],
+    authSettings: {
+        emailVerified: {
+            type: Boolean,
+            default: false
+        },
+        emailVerificationToken: String,
+        emailVerificationExpires: Date,
+        passwordResetToken: String,
+        passwordResetExpires: Date,
+        twoFactorEnabled: {
+            type: Boolean,
+            default: false
+        },
+        twoFactorSecret: String,
+        twoFactorBackupCodes: [String]
     },
     preferences: {
         emailNotifications: {
@@ -74,5 +114,33 @@ userSchema.methods.initializeReadingProfile = async function() {
     await this.save();
     return profile;
 };
+
+// New method for company affiliations
+userSchema.methods.addCompanyAffiliation = async function(companyId, role = 'member', department = '') {
+    const existing = this.companyAffiliations.find(
+        affiliation => affiliation.company.toString() === companyId.toString()
+    );
+    
+    if (existing) {
+        return existing;
+    }
+    
+    const newAffiliation = {
+        company: companyId,
+        role,
+        department,
+        status: 'pending',
+        isDefault: this.companyAffiliations.length === 0 // First company is default
+    };
+    
+    this.companyAffiliations.push(newAffiliation);
+    await this.save();
+    return newAffiliation;
+};
+
+// Index for company affiliations
+userSchema.index({ 'companyAffiliations.company': 1 });
+userSchema.index({ 'companyAffiliations.status': 1 });
+userSchema.index({ email: 1 });
 
 module.exports = mongoose.model('User', userSchema);
