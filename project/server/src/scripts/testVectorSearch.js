@@ -258,10 +258,9 @@ class VectorSearchTester {
 
             console.log('');
         }
-    }
-
-    async performVectorSearch(query, limit = 20) {
-        const queryEmbedding = await embeddingService.generateEmbedding(query);
+    }    async performVectorSearch(query, limit = 20) {
+        // Generate query embedding with the correct dimensions for Atlas index (384)
+        const queryEmbedding = await embeddingService.generateEmbedding(query, { dimensions: 384 });
         const embedding = Array.isArray(queryEmbedding) ? queryEmbedding[0] : queryEmbedding;
 
         const pipeline = [
@@ -300,21 +299,19 @@ class VectorSearchTester {
         .sort({ score: { $meta: 'textScore' } })
         .limit(limit)
         .select('title author genres');
-    }
-
-    validateEmbeddingStructure(embeddings) {
+    }    validateEmbeddingStructure(embeddings) {
         return (
             embeddings &&
             Array.isArray(embeddings.combined) &&
-            embeddings.combined.length === 768 &&
+            embeddings.combined.length === 384 &&  // Atlas index expects 384
             Array.isArray(embeddings.semantic) &&
-            embeddings.semantic.length === 384 &&
+            embeddings.semantic.length === 384 &&  // Atlas index expects 384
             Array.isArray(embeddings.emotional) &&
-            embeddings.emotional.length === 128 &&
+            embeddings.emotional.length === 128 &&  // Atlas index expects 128
             Array.isArray(embeddings.textual) &&
-            embeddings.textual.length === 512 &&
+            embeddings.textual.length === 512 &&   // Not used in Atlas
             Array.isArray(embeddings.style) &&
-            embeddings.style.length === 256
+            embeddings.style.length === 256        // Not used in Atlas
         );
     }
 

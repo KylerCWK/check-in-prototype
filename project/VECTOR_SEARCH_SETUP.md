@@ -32,38 +32,80 @@ node src/scripts/setupVectorSearch.js
 
 **Manual Setup in Atlas UI**:
 1. Go to MongoDB Atlas → Search → Create Search Index
-2. Use JSON Editor with this configuration:
+2. Select your database (e.g., `qrlibrary`) and collection (`books`)
+3. Use JSON Editor with this configuration:
 
 ```json
 {
-  "fields": [
-    {
-      "type": "vector",
-      "path": "embeddings.combined",
-      "numDimensions": 768,
-      "similarity": "cosine"
-    },
-    {
-      "type": "vector", 
-      "path": "embeddings.semantic",
-      "numDimensions": 384,
-      "similarity": "cosine"
-    },
-    {
-      "type": "vector",
-      "path": "embeddings.emotional", 
-      "numDimensions": 128,
-      "similarity": "cosine"
-    },
-    {
-      "type": "filter",
-      "path": "processing.embeddingsGenerated"
-    },
-    {
-      "type": "filter",
-      "path": "genres"
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "_id": {
+        "type": "objectId"
+      },
+      "embeddings": {
+        "type": "document",
+        "fields": {
+          "combined": {
+            "type": "knnVector",
+            "dimensions": 384,
+            "similarity": "cosine"
+          },
+          "semantic": {
+            "type": "knnVector",
+            "dimensions": 384,
+            "similarity": "cosine"
+          },
+          "emotional": {
+            "type": "knnVector",
+            "dimensions": 128,
+            "similarity": "cosine"
+          }
+        }
+      },
+      "processing": {
+        "type": "document",
+        "fields": {
+          "embeddingsGenerated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "genres": [
+        {
+          "type": "string"
+        }
+      ],
+      "title": {
+        "type": "string",
+        "analyzer": "lucene.standard"
+      },
+      "author": {
+        "type": "string",
+        "analyzer": "lucene.standard"  
+      },
+      "description": {
+        "type": "string",
+        "analyzer": "lucene.standard"
+      },
+      "topics": [
+        {
+          "type": "string"
+        }
+      ],
+      "stats": {
+        "type": "document",
+        "fields": {
+          "averageRating": {
+            "type": "number"
+          },
+          "viewCount": {
+            "type": "number"
+          }
+        }
+      }
     }
-  ]
+  }
 }
 ```
 
@@ -164,7 +206,7 @@ EMBEDDING_PROVIDER=mock
 Default settings optimized for book recommendations:
 - **numCandidates**: 100 (search space)
 - **similarity**: cosine (best for text embeddings)
-- **dimensions**: 768 (combined), 384 (semantic), 128 (emotional)
+- **dimensions**: 384 (combined), 384 (semantic), 128 (emotional)
 
 ## 📈 Performance Improvements
 

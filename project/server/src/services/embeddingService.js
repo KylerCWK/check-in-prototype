@@ -179,14 +179,15 @@ class EmbeddingService {
     async generateAzureEmbedding(texts, options) {
         // Azure OpenAI implementation would go here
         return await this.generateMockEmbedding(texts, options);
-    }
-
-    async generateMockEmbedding(texts, options) {
+    }    async generateMockEmbedding(texts, options) {
         // Generate deterministic but varied embeddings for consistent testing
+        // Use custom dimensions if provided, otherwise fall back to default
+        const dimensions = options?.dimensions || this.dimensions;
+        
         return texts.map(text => {
-            const embedding = new Array(this.dimensions).fill(0);
+            const embedding = new Array(dimensions).fill(0);
             
-            for (let i = 0; i < this.dimensions; i++) {
+            for (let i = 0; i < dimensions; i++) {
                 // Create pseudo-embedding based on text content
                 const hash = this.simpleHash(text + i);
                 embedding[i] = (hash % 200 - 100) / 100; // Values between -1 and 1
@@ -227,15 +228,13 @@ class EmbeddingService {
             const emotionalContent = `${moodTags.join(' ')} ${themes.join(' ')} emotional tone and feeling`;
             
             // Generate combined content for the primary embedding
-            const combinedContent = `${textualContent} ${genres.join(' ')} ${themes.join(' ')} ${moodTags.join(' ')}`;
-
-            // Generate embeddings for different aspects
+            const combinedContent = `${textualContent} ${genres.join(' ')} ${themes.join(' ')} ${moodTags.join(' ')}`;            // Generate embeddings for different aspects with correct dimensions for Atlas
             const [textual, semantic, style, emotional, combined] = await Promise.all([
-                this.generateEmbedding(textualContent),
-                this.generateEmbedding(semanticContent),
-                this.generateEmbedding(styleContent),
-                this.generateEmbedding(emotionalContent),
-                this.generateEmbedding(combinedContent)
+                this.generateEmbedding(textualContent, { dimensions: 512 }),     // textual - not used in Atlas
+                this.generateEmbedding(semanticContent, { dimensions: 384 }),    // semantic - used in Atlas  
+                this.generateEmbedding(styleContent, { dimensions: 256 }),       // style - not used in Atlas
+                this.generateEmbedding(emotionalContent, { dimensions: 128 }),   // emotional - used in Atlas
+                this.generateEmbedding(combinedContent, { dimensions: 384 })     // combined - main vector in Atlas
             ]);
 
             return {
@@ -250,16 +249,15 @@ class EmbeddingService {
             console.error('Error generating book embeddings:', error);
             return this.generateFallbackBookEmbeddings();
         }
-    }
-
-    generateFallbackBookEmbeddings() {
-        // Return zero vectors as fallback
+    }    generateFallbackBookEmbeddings() {
+        // Return zero vectors as fallback with correct dimensions for Atlas index
+        // Atlas expects: combined=384, semantic=384, emotional=128
         return {
-            textual: new Array(512).fill(0),
-            semantic: new Array(384).fill(0),
-            style: new Array(256).fill(0),
-            emotional: new Array(128).fill(0),
-            combined: new Array(this.dimensions).fill(0)
+            textual: new Array(512).fill(0),      // Not used in Atlas index
+            semantic: new Array(384).fill(0),     // Used in Atlas index
+            style: new Array(256).fill(0),        // Not used in Atlas index
+            emotional: new Array(128).fill(0),    // Used in Atlas index
+            combined: new Array(384).fill(0)      // Used in Atlas index (main vector)
         };
     }
 

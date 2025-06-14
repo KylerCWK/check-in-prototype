@@ -126,16 +126,39 @@ async function generateEmbeddingsForBooks() {
 }
 
 // Function to regenerate embeddings for specific books
-async function regenerateEmbeddingsForBooks(bookIds = []) {
-    try {
+async function regenerateEmbeddingsForBooks(bookIds = []) {    try {
         await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/check-in-prototype');
         console.log('📊 Connected to MongoDB');
+        
+        let query;
+        let books;
 
-        const query = bookIds.length > 0 
-            ? { _id: { $in: bookIds.map(id => mongoose.Types.ObjectId(id)) } }
-            : {};
+        // Handle --all flag for regenerating all books
+        if (bookIds.length === 1 && bookIds[0] === '--all') {
+            console.log('🔄 Regenerating ALL embeddings...');
+            
+            // Clear all existing embeddings and mark for regeneration
+            const clearResult = await Book.updateMany(
+                {},
+                {
+                    $unset: { embeddings: 1 },
+                    $set: {
+                        'processing.embeddingsGenerated': false,
+                        'processing.needsReprocessing': true
+                    }
+                }
+            );
+            console.log(`✅ Cleared embeddings from ${clearResult.modifiedCount} books`);
+            
+            // Now regenerate them all
+            books = await Book.find({});
+        } else if (bookIds.length > 0) {
+            query = { _id: { $in: bookIds.map(id => new mongoose.Types.ObjectId(id)) } };
+            books = await Book.find(query);
+        } else {
+            books = await Book.find({ 'processing.needsReprocessing': true });
+        }
 
-        const books = await Book.find(query);
         console.log(`📚 Found ${books.length} books to regenerate embeddings`);
 
         for (const book of books) {
@@ -183,15 +206,15 @@ async function validateEmbeddings() {
         console.log(`🔍 Validating ${booksWithEmbeddings.length} books with embeddings`);
 
         let validEmbeddings = 0;
-        let invalidEmbeddings = 0;
-
-        for (const book of booksWithEmbeddings) {
+        let invalidEmbeddings = 0;        for (const book of booksWithEmbeddings) {
+            // Check if embeddings match the expected dimensions for Atlas Vector Search
+            // Atlas index expects: combined=384, semantic=384, emotional=128
             const isValid = (
-                book.embeddings?.combined?.length === 768 &&
+                book.embeddings?.combined?.length === 384 &&
                 book.embeddings?.semantic?.length === 384 &&
-                book.embeddings?.emotional?.length === 128 &&
-                book.embeddings?.textual?.length === 512 &&
-                book.embeddings?.style?.length === 256
+                book.embeddings?.emotional?.length === 128
+                // Note: textual and style embeddings are not used in Atlas index
+                // so we don't validate them here, but they should be 512 and 256 respectively
             );
 
             if (isValid) {
