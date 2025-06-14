@@ -2,12 +2,14 @@ const express = require('express');
 const router = express.Router();
 const Book = require('../models/Book');
 const embeddingService = require('../services/embeddingService');
+const { validationChains } = require('../middleware/validation');
+const { optionalAuth } = require('../middleware/auth');
 
 // Get paginated catalog with filters
-router.get('/', async (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Cap at 100
         const genre = req.query.genre;
         const searchQuery = req.query.search;
         const searchBy = req.query.searchBy || 'all';
@@ -31,19 +33,21 @@ router.get('/', async (req, res) => {
             } else {
                 // Use MongoDB's full-text search for better performance and relevance
                 query.$text = { $search: searchQuery };
-                
-                // Add text score for relevance sorting
-                if (sortBy === 'relevance') {
-                    sortOptions = { score: { $meta: 'textScore' } };
-                }
             }
         }
         
         // Get total count for pagination
         const total = await Book.countDocuments(query);
+        
         // Determine sort order
         let sortOptions = {};
         let projection = {};
+        
+        // Add text score for relevance sorting if using text search
+        if (searchQuery && searchBy === 'all' && sortBy === 'relevance') {
+            sortOptions = { score: { $meta: 'textScore' } };
+            projection = { score: { $meta: 'textScore' } };
+        }
         
         switch (sortBy) {
             case 'title':
@@ -180,7 +184,7 @@ router.get('/metadata', async (req, res) => {
 });
 
 // Get book details by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', validationChains.catalogById, optionalAuth, async (req, res) => {
     try {
         const book = await Book.findById(req.params.id);
         if (!book) {
@@ -199,7 +203,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Semantic search using vector embeddings
-router.post('/semantic-search', async (req, res) => {
+router.post('/semantic-search', validationChains.semanticSearch, optionalAuth, async (req, res) => {
     try {
         const { query: searchQuery, limit = 20, page = 1 } = req.body;
         

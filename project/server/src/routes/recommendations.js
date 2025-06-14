@@ -1,14 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const aiService = require('../services/aiService');
-const auth = require('../middleware/auth');
+const { authMiddleware, optionalAuth } = require('../middleware/auth');
+const { validationChains } = require('../middleware/validation');
+const { requireDevelopment, devAuthBypass } = require('../middleware/devAuth');
 
 /**
  * @route   GET /api/recommendations
  * @desc    Get recommended books for the user
  * @access  Private
  */
-router.get('/', auth, async (req, res) => {
+router.get('/', validationChains.recommendations, authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         const limit = parseInt(req.query.limit) || 10;
@@ -34,7 +36,7 @@ router.get('/', auth, async (req, res) => {
  * @desc    Get daily book recommendation
  * @access  Private
  */
-router.get('/daily', auth, async (req, res) => {
+router.get('/daily', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         const dailyPick = await aiService.getDailyRecommendation(userId);
@@ -64,7 +66,7 @@ router.get('/daily', auth, async (req, res) => {
  * @desc    Get new releases based on user interests
  * @access  Private
  */
-router.get('/new-releases', auth, async (req, res) => {
+router.get('/new-releases', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         const limit = parseInt(req.query.limit) || 5;
@@ -90,10 +92,25 @@ router.get('/new-releases', auth, async (req, res) => {
  * @desc    Get books similar to a specific book
  * @access  Private
  */
-router.get('/similar/:bookId', auth, async (req, res) => {
+router.get('/similar/:bookId', authMiddleware, async (req, res) => {
     try {
         const { bookId } = req.params;
         const limit = parseInt(req.query.limit) || 5;
+        
+        // Basic validation
+        if (!bookId || !bookId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid book ID is required'
+            });
+        }
+        
+        if (limit < 1 || limit > 20) {
+            return res.status(400).json({
+                success: false,
+                message: 'Limit must be between 1 and 20'
+            });
+        }
         
         const similarBooks = await aiService.getSimilarBooks(bookId, limit);
         
@@ -116,7 +133,7 @@ router.get('/similar/:bookId', auth, async (req, res) => {
  * @desc    Update user's AI profile
  * @access  Private
  */
-router.put('/profile', auth, async (req, res) => {
+router.put('/profile', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         
@@ -147,7 +164,7 @@ router.put('/profile', auth, async (req, res) => {
  * @desc    Get contextual recommendations based on mood, time, and genre preferences
  * @access  Private
  */
-router.post('/contextual', auth, async (req, res) => {
+router.post('/contextual', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         const { mood, time, genres, limit = 10 } = req.body;
@@ -175,7 +192,7 @@ router.post('/contextual', auth, async (req, res) => {
  * @desc    Get recommendation system performance analytics
  * @access  Private
  */
-router.get('/analytics', auth, async (req, res) => {
+router.get('/analytics', authMiddleware, async (req, res) => {
     try {
         const analytics = aiService.recommendationAnalytics.getPerformanceReport();
         
@@ -197,7 +214,7 @@ router.get('/analytics', auth, async (req, res) => {
  * @desc    Record user engagement with recommendations
  * @access  Private
  */
-router.post('/engagement', auth, async (req, res) => {
+router.post('/engagement', authMiddleware, async (req, res) => {
     try {
         const { type } = req.body; // dailyRecommendationClicks, recommendationViews, favoritesAdded
         
@@ -218,10 +235,10 @@ router.post('/engagement', auth, async (req, res) => {
 
 /**
  * @route   GET /api/recommendations/test/:userId
- * @desc    Test route for debugging recommendations (temporary)
- * @access  Public
+ * @desc    Test route for debugging recommendations (DEVELOPMENT ONLY)
+ * @access  Development Only
  */
-router.get('/test/:userId', async (req, res) => {
+router.get('/test/:userId', requireDevelopment, devAuthBypass, async (req, res) => {
     try {
         const userId = req.params.userId;
         const limit = parseInt(req.query.limit) || 5;
@@ -247,10 +264,10 @@ router.get('/test/:userId', async (req, res) => {
 
 /**
  * @route   GET /api/recommendations/test-daily/:userId
- * @desc    Test route for debugging daily recommendations (temporary)
- * @access  Public
+ * @desc    Test route for debugging daily recommendations (DEVELOPMENT ONLY)
+ * @access  Development Only
  */
-router.get('/test-daily/:userId', async (req, res) => {
+router.get('/test-daily/:userId', requireDevelopment, devAuthBypass, async (req, res) => {
     try {
         const userId = req.params.userId;
         
@@ -274,10 +291,10 @@ router.get('/test-daily/:userId', async (req, res) => {
 
 /**
  * @route   GET /api/recommendations/test-new-releases/:userId
- * @desc    Test route for debugging new releases (temporary)
- * @access  Public
+ * @desc    Test route for debugging new releases (DEVELOPMENT ONLY)
+ * @access  Development Only
  */
-router.get('/test-new-releases/:userId', async (req, res) => {
+router.get('/test-new-releases/:userId', requireDevelopment, devAuthBypass, async (req, res) => {
     try {
         const userId = req.params.userId;
         const limit = parseInt(req.query.limit) || 5;
@@ -303,10 +320,10 @@ router.get('/test-new-releases/:userId', async (req, res) => {
 
 /**
  * @route   GET /api/recommendations/test-similar/:userId/:bookId
- * @desc    Test route for debugging similar books (temporary)
- * @access  Public
+ * @desc    Test route for debugging similar books (DEVELOPMENT ONLY)
+ * @access  Development Only
  */
-router.get('/test-similar/:userId/:bookId', async (req, res) => {
+router.get('/test-similar/:userId/:bookId', requireDevelopment, devAuthBypass, async (req, res) => {
     try {
         const { userId, bookId } = req.params;
         const limit = parseInt(req.query.limit) || 5;
@@ -362,10 +379,10 @@ router.get('/test-favorites/:userId', async (req, res) => {
 
 /**
  * @route   GET /api/recommendations/test-generic-new-releases
- * @desc    Test route for debugging generic new releases (temporary)
- * @access  Public
+ * @desc    Test route for debugging generic new releases (DEVELOPMENT ONLY)
+ * @access  Development Only
  */
-router.get('/test-generic-new-releases', async (req, res) => {
+router.get('/test-generic-new-releases', requireDevelopment, async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
         

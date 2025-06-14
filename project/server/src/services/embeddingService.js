@@ -3,15 +3,13 @@
  * Supports multiple embedding providers and models
  */
 
-// For production use, uncomment and configure your preferred embedding service:
-// const { Configuration, OpenAIApi } = require('openai');
-// const { HfInference } = require('@huggingface/inference');
+const { HfInference } = require('@huggingface/inference');
 
 class EmbeddingService {
     constructor() {
         this.provider = process.env.EMBEDDING_PROVIDER || 'mock';
-        this.model = process.env.EMBEDDING_MODEL || 'text-embedding-ada-002';
-        this.dimensions = parseInt(process.env.EMBEDDING_DIMENSIONS) || 768;
+        this.model = process.env.EMBEDDING_MODEL || 'sentence-transformers/all-MiniLM-L6-v2';
+        this.dimensions = parseInt(process.env.EMBEDDING_DIMENSIONS) || 384;
         
         this.initializeProvider();
     }
@@ -51,20 +49,16 @@ class EmbeddingService {
         });
         this.client = new OpenAIApi(configuration);
         */
-    }
-
-    initializeHuggingFace() {
+    }    initializeHuggingFace() {
         if (!process.env.HUGGINGFACE_API_KEY) {
             console.warn('HUGGINGFACE_API_KEY not found, falling back to mock embeddings');
             this.provider = 'mock';
             return;
         }
         
-        // Uncomment for production use:
-        /*
-        const { HfInference } = require('@huggingface/inference');
+        console.log(`Initializing Hugging Face embedding service with model: ${this.model}`);
         this.client = new HfInference(process.env.HUGGINGFACE_API_KEY);
-        */
+        console.log('✅ Hugging Face embedding service initialized successfully');
     }
 
     initializeCohere() {
@@ -138,27 +132,25 @@ class EmbeddingService {
         
         // Mock implementation
         return await this.generateMockEmbedding(texts, options);
-    }
-
-    async generateHuggingFaceEmbedding(texts, options) {
-        /*
-        // Uncomment for production use:
-        const model = options.model || 'sentence-transformers/all-MiniLM-L6-v2';
-        const embeddings = [];
-        
-        for (const text of texts) {
-            const response = await this.client.featureExtraction({
-                model: model,
-                inputs: text,
-            });
-            embeddings.push(response);
+    }    async generateHuggingFaceEmbedding(texts, options) {
+        try {
+            const model = options.model || this.model;
+            const embeddings = [];
+            
+            for (const text of texts) {
+                const response = await this.client.featureExtraction({
+                    model: model,
+                    inputs: text,
+                });
+                embeddings.push(response);
+            }
+            
+            return Array.isArray(texts) ? embeddings : embeddings[0];
+        } catch (error) {
+            console.error('Hugging Face embedding error:', error);
+            // Fallback to mock embeddings
+            return await this.generateMockEmbedding(texts, options);
         }
-        
-        return Array.isArray(input) ? embeddings : embeddings[0];
-        */
-        
-        // Mock implementation
-        return await this.generateMockEmbedding(texts, options);
     }
 
     async generateCohereEmbedding(texts, options) {

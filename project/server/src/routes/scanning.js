@@ -1,18 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const Company = require('../models/Company');
 const User = require('../models/User');
 const Book = require('../models/Book');
 const TrackingEvent = require('../models/TrackingEvent');
 
 /**
- * @route   POST /api/companies/process-scan
+ * @route   POST /api/scanning/process-scan
  * @desc    Process a QR code scan from the company dashboard
  * @access  Private
  */
-router.post('/process-scan', auth, async (req, res) => {
+router.post('/process-scan', authMiddleware, async (req, res) => {
     try {
         const { qrData, timestamp } = req.body;
 
@@ -92,7 +92,7 @@ router.post('/process-scan', auth, async (req, res) => {
  * @desc    Get recent QR code scans for the company
  * @access  Private
  */
-router.get('/recent-scans', auth, async (req, res) => {
+router.get('/recent-scans', authMiddleware, async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 10;
         
@@ -145,7 +145,7 @@ router.get('/recent-scans', auth, async (req, res) => {
  * @desc    Get scanning statistics for the company
  * @access  Private
  */
-router.get('/scanning-stats', auth, async (req, res) => {
+router.get('/scanning-stats', authMiddleware, async (req, res) => {
     try {
         // Find user's company
         const user = await User.findById(req.user.id);

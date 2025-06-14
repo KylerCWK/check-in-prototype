@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const auth = require('../middleware/auth');
+const { authMiddleware, optionalAuth } = require('../middleware/auth');
+const { validationChains } = require('../middleware/validation');
 const ReadingProfile = require('../models/ReadingProfile');
 const Book = require('../models/Book');
 const aiService = require('../services/aiService');
@@ -14,33 +15,15 @@ const { v4: uuidv4 } = require('uuid');
  * @desc    Track when a user views a book to improve recommendations
  * @access  Public (but will track user if logged in)
  */
-router.post('/book-view', async (req, res) => {
+router.post('/book-view', optionalAuth, validationChains.trackBookView, async (req, res) => {
     try {
-        let userId = null;
-        // Check if user is authenticated
-        const token = req.headers['authorization']?.split(' ')[1];
-        if (token) {
-            try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                userId = decoded.id;
-            } catch (err) {
-                console.log('Invalid token, continuing as anonymous user');
-            }
-        }
-        
+        const userId = req.user?.id || null;
         const { 
             bookId, 
             viewDuration, 
             sessionId,
             metadata = {} 
         } = req.body;
-        
-        if (!bookId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Book ID is required'
-            });
-        }
         
         // Check if book exists
         const book = await Book.findById(bookId);
@@ -90,7 +73,7 @@ router.post('/book-view', async (req, res) => {
  * @desc    Track reading session with detailed progress
  * @access  Private
  */
-router.post('/reading-session', auth, async (req, res) => {
+router.post('/reading-session', authMiddleware, validationChains.trackReadingSession, async (req, res) => {
     try {
         const userId = req.user.id;
         const {
@@ -136,18 +119,9 @@ router.post('/reading-session', auth, async (req, res) => {
  * @desc    Track search behavior
  * @access  Public
  */
-router.post('/search', async (req, res) => {
+router.post('/search', optionalAuth, validationChains.trackSearch, async (req, res) => {
     try {
-        let userId = null;
-        const token = req.headers['authorization']?.split(' ')[1];
-        if (token) {
-            try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                userId = decoded.id;
-            } catch (err) {
-                // Continue as anonymous
-            }
-        }
+        const userId = req.user?.id || null;
 
         const {
             query,
@@ -189,18 +163,9 @@ router.post('/search', async (req, res) => {
  * @desc    Track generic user events
  * @access  Public
  */
-router.post('/event', async (req, res) => {
+router.post('/event', optionalAuth, validationChains.trackEvent, async (req, res) => {
     try {
-        let userId = null;
-        const token = req.headers['authorization']?.split(' ')[1];
-        if (token) {
-            try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                userId = decoded.id;
-            } catch (err) {
-                // Continue as anonymous
-            }
-        }
+        const userId = req.user?.id || null;
 
         const eventData = {
             ...req.body,
@@ -234,18 +199,26 @@ router.post('/event', async (req, res) => {
  * @desc    Get user analytics and insights
  * @access  Private
  */
-router.get('/analytics/:userId', auth, async (req, res) => {
+router.get('/analytics/:userId', authMiddleware, async (req, res) => {
     try {
+        const { userId } = req.params;
+        
+        // Basic validation
+        if (!userId || !userId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid user ID is required'
+            });
+        }
+        
         // Verify user can access these analytics
-        if (req.user.id !== req.params.userId && req.user.role !== 'admin') {
+        if (req.user.id !== userId && req.user.role !== 'admin') {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied'
             });
-        }
-
-        const timeframe = req.query.timeframe || '30d';
-        const analytics = await trackingService.generateUserAnalytics(req.params.userId, timeframe);
+        }        const timeframe = req.query.timeframe || '30d';
+        const analytics = await trackingService.generateUserAnalytics(userId, timeframe);
 
         if (!analytics) {
             return res.status(404).json({
@@ -272,7 +245,7 @@ router.get('/analytics/:userId', auth, async (req, res) => {
  * @desc    Process tracking events batch for ML analysis
  * @access  Private (Admin only)
  */
-router.post('/process-batch', auth, async (req, res) => {
+router.post('/process-batch', authMiddleware, validationChains.processBatch, async (req, res) => {
     try {
         // Admin only endpoint
         if (req.user.role !== 'admin') {

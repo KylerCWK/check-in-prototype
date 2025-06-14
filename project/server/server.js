@@ -2,20 +2,55 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
 require('dotenv').config();
-// require('dotenv').config({ path: './.env' });
 
+// Import security configurations
+const { 
+  rateLimits, 
+  corsOptions, 
+  helmetConfig, 
+  mongoSanitizeConfig, 
+  hppConfig 
+} = require('./src/config/security');
 
 const app = express();
-app.use(cors({
-  origin: '*', // Allow all origins
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-app.use(express.json());
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Security middleware (apply early)
+app.use(helmet(helmetConfig));
+app.use(mongoSanitize(mongoSanitizeConfig));
+app.use(hpp(hppConfig));
+
+// CORS configuration
+if (process.env.NODE_ENV === 'production') {
+  app.use(cors(corsOptions));
+} else {
+  // More permissive CORS for development
+  app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control']
+  }));
+}
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' })); // Limit payload size
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Apply general rate limiting
+app.use('/api/', rateLimits.general);
+
+// Serve uploaded files statically with security headers
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, path) => {
+    // Prevent execution of uploaded files
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Disposition', 'inline');
+  }
+}));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, { dbName: 'qrlibrary' })
@@ -72,13 +107,13 @@ const startServer = (port) => {
   });
 };
 
-// Mount auth routes from routes/auth.js for /api/auth endpoints
+// Mount auth routes with stricter rate limiting
 const authRoutes = require('./src/routes/auth');
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', rateLimits.auth, authRoutes);
 
-// Mount catalog routes
+// Mount catalog routes with search rate limiting
 const catalogRoutes = require('./src/routes/catalog');
-app.use('/api/catalog', catalogRoutes);
+app.use('/api/catalog', rateLimits.search, catalogRoutes);
 
 // Mount recommendation routes
 const recommendationRoutes = require('./src/routes/recommendations');
@@ -96,13 +131,36 @@ app.use('/api/tracking', trackingRoutes);
 const companyRoutes = require('./src/routes/companies');
 app.use('/api/companies', companyRoutes);
 
-// Mount company QR code routes
+// Mount company QR code routes with upload rate limiting
 const companyQrRoutes = require('./src/routes/companyQr');
-app.use('/api/companies/qr', companyQrRoutes);
+app.use('/api/companies/qr', rateLimits.upload, companyQrRoutes);
 
 // Mount scanning routes
 const scanningRoutes = require('./src/routes/scanning');
-app.use('/api/companies', scanningRoutes);
+app.use('/api/scanning', scanningRoutes);
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err);
+  
+  // Don't leak error details in production
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  
+  res.status(err.status || 500).json({
+    error: isDevelopment ? err.message : 'Internal server error',
+    code: err.code || 'INTERNAL_ERROR',
+    ...(isDevelopment && { stack: err.stack })
+  });
+});
+
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    error: 'API endpoint not found',
+    code: 'ENDPOINT_NOT_FOUND',
+    path: req.originalUrl
+  });
+});
 
 // Start the server asynchronously and handle any errors
 startServer(PORT).catch(err => {

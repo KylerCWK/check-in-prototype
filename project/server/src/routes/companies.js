@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const auth = require('../middleware/auth');
+const { param, validationResult } = require('express-validator');
+const { authMiddleware, requireRole } = require('../middleware/auth');
+const { validationChains } = require('../middleware/validation');
 const Company = require('../models/Company');
 const User = require('../models/User');
 const nodemailer = require('nodemailer');
@@ -12,20 +14,12 @@ const crypto = require('crypto');
  * @desc    Create a new company
  * @access  Private
  */
-router.post('/', auth, async (req, res) => {
+router.post('/', authMiddleware, validationChains.createCompany, async (req, res) => {
     try {
         const { 
             name, description, address, contactEmail, contactPhone, 
             website, domains, departments, qrCodeSettings, authSettings 
         } = req.body;
-
-        // Basic validation
-        if (!name || !contactEmail) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Company name and contact email are required' 
-            });
-        }
 
         // Check for existing company with the same name
         const existingCompany = await Company.findOne({ name });
@@ -90,7 +84,7 @@ router.post('/', auth, async (req, res) => {
  * @desc    Get all companies (admin only)
  * @access  Private/Admin
  */
-router.get('/', auth, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
         // Only allow admin users to see all companies
         if (req.user.role !== 'admin') {
@@ -123,7 +117,7 @@ router.get('/', auth, async (req, res) => {
  * @desc    Get companies for current user
  * @access  Private
  */
-router.get('/user', auth, async (req, res) => {
+router.get('/user', authMiddleware, async (req, res) => {
     try {
         const user = await User.findById(req.user.id)
             .populate({
@@ -168,7 +162,7 @@ router.get('/user', auth, async (req, res) => {
  * @desc    Get company by ID
  * @access  Private
  */
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
     try {
         const company = await Company.findById(req.params.id)
             .populate('admins', 'email profile.name')
@@ -212,7 +206,7 @@ router.get('/:id', auth, async (req, res) => {
  * @desc    Update company details
  * @access  Private/Admin
  */
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
     try {
         const company = await Company.findById(req.params.id);
         
@@ -278,7 +272,7 @@ router.put('/:id', auth, async (req, res) => {
  * @desc    Request to join a company
  * @access  Private
  */
-router.post('/:id/join', auth, async (req, res) => {
+router.post('/:id/join', authMiddleware, async (req, res) => {
     try {
         const { department, role } = req.body;
         
@@ -340,7 +334,7 @@ router.post('/:id/join', auth, async (req, res) => {
  * @desc    Update member status (approve/deny)
  * @access  Private/Admin
  */
-router.put('/:id/members/:userId', auth, async (req, res) => {
+router.put('/:id/members/:userId', authMiddleware, async (req, res) => {
     try {
         const { status, role, department } = req.body;
         

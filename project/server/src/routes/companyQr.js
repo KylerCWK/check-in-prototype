@@ -5,7 +5,7 @@ const QRCode = require('qrcode');
 const jimp = require('jimp');
 const fs = require('fs');
 const multer = require('multer');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const Company = require('../models/Company');
 
 // Ensure upload directory exists
@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Get company QR code settings
-router.get('/qr-settings', auth, async (req, res) => {
+router.get('/qr-settings', authMiddleware, async (req, res) => {
     try {
         const company = await Company.findById(req.user.company);
         if (!company) {
@@ -42,7 +42,7 @@ router.get('/qr-settings', auth, async (req, res) => {
 });
 
 // Update company QR code settings
-router.post('/qr-settings', auth, upload.single('logo'), async (req, res) => {
+router.post('/qr-settings', authMiddleware, upload.single('logo'), async (req, res) => {
     try {
         const company = await Company.findById(req.user.company);
         if (!company) {
@@ -73,7 +73,7 @@ router.post('/qr-settings', auth, upload.single('logo'), async (req, res) => {
 });
 
 // Generate QR code for book
-router.post('/qr-code', auth, upload.single('logo'), async (req, res) => {
+router.post('/qr-code', authMiddleware, upload.single('logo'), async (req, res) => {
     try {
         const company = await Company.findById(req.user.company);
         if (!company) {

@@ -1,49 +1,19 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const rateLimit = require('express-rate-limit');
-const Joi = require('joi');
 const User = require('../models/User');
 const ReadingProfile = require('../models/ReadingProfile');
-const Company = require('../models/Company'); // Added Company model
-const auth = require('../middleware/auth');
+const Company = require('../models/Company');
+const { authMiddleware } = require('../middleware/auth');
+const { validationChains } = require('../middleware/validation');
 const authService = require('../services/authService');
 
 const router = express.Router();
 
-// Rate limiter for auth routes
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes (change as needed)
-  max: 10, // limit each IP to 10 requests per windowMs
-  message: { message: 'Too many requests, please try again later.' }
-});
-
-// Updated validation schemas
-const loginSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required()
-});
-
-// Updated registration schema with optional company fields
-const registerSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
-  confirmPassword: Joi.string().valid(Joi.ref('password')).required().messages({
-    'any.only': 'Passwords do not match'
-  }),
-  companyId: Joi.string().optional(),
-  companyName: Joi.string().optional(),
-  companyRole: Joi.string().optional(),
-  companyDepartment: Joi.string().optional()
-});
-
 // Login route - updated for 2FA
-router.post('/login', authLimiter, async (req, res) => {
-  const { error } = loginSchema.validate(req.body);
-  if (error) return res.status(400).json({ message: error.details[0].message });
-  const { email, password } = req.body;
-  
+router.post('/login', validationChains.login, async (req, res) => {
   try {
+    const { email, password } = req.body;
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
@@ -122,15 +92,9 @@ router.post('/login', authLimiter, async (req, res) => {
 });
 
 // Register route - updated for company registration
-router.post('/register', authLimiter, async (req, res) => {
-  const { error } = registerSchema.validate(req.body);
-  if (error) {
-    return res.status(400).json({ message: error.details[0].message });
-  }
-  
-  const { email, password, companyId, companyName, companyRole, companyDepartment } = req.body;
-  
+router.post('/register', validationChains.register, async (req, res) => {
   try {
+    const { email, password, companyId, companyName, companyRole, companyDepartment } = req.body;
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(400).json({ message: 'Email already exists' });
@@ -241,25 +205,49 @@ router.post('/register', authLimiter, async (req, res) => {
 });
 
 // Route for email verification
-router.post('/verify-email', async (req, res) => {
+router.post('/verify-email', validationChains.verifyEmail, async (req, res) => {
   await authService.verifyEmail(req, res);
 });
 
 // 2FA routes
-router.post('/2fa/setup', auth, async (req, res) => {
+router.post('/2fa/setup', authMiddleware, async (req, res) => {
   await authService.setup2FA(req, res);
 });
 
-router.post('/2fa/verify', auth, async (req, res) => {
+router.post('/2fa/verify', authMiddleware, validationChains.verify2FA, async (req, res) => {
   await authService.verify2FA(req, res);
 });
 
-router.post('/2fa/validate', async (req, res) => {
+router.post('/2fa/validate', validationChains.validate2FA, async (req, res) => {
   await authService.validate2FA(req, res);
 });
 
-router.post('/2fa/disable', auth, async (req, res) => {
+router.post('/2fa/disable', authMiddleware, async (req, res) => {
   await authService.disable2FA(req, res);
+});
+
+// Logout route
+router.post('/logout', authMiddleware, async (req, res) => {
+  try {
+    // Add token to blacklist
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (token) {
+      // In a production environment, you would store this in Redis or database
+      // For now, we'll just acknowledge the logout
+      console.log('Token blacklisted:', token.substring(0, 20) + '...');
+    }
+    
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error during logout'
+    });
+  }
 });
 
 module.exports = router;

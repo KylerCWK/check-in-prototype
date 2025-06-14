@@ -106,38 +106,78 @@ api.interceptors.response.use(
 
 export default api;
 
-// Test user ID for bypassing authentication during development
-const TEST_USER_ID = '60d5ecb74b24a000154f1234'; // Hardcoded test user ID
+// Authentication helper functions
+const isAuthenticated = () => {
+  const token = localStorage.getItem('token');
+  return token && token !== 'null' && token !== 'undefined';
+};
+
+const getUserId = () => {
+  const user = localStorage.getItem('user');
+  if (user && user !== 'null') {
+    try {
+      const parsedUser = JSON.parse(user);
+      return parsedUser.id;
+    } catch (e) {
+      console.error('Error parsing user data:', e);
+      return null;
+    }
+  }
+  return null;
+};
+
+// Test user ID for development when not authenticated
+const TEST_USER_ID = '60d5ecb74b24a000154f1234';
 
 // Recommendation API calls
 export const getRecommendations = async (limit = 10) => {
-  // Use test route to bypass authentication issues
-  const response = await api.get(`/api/recommendations/test/${TEST_USER_ID}?limit=${limit}`);
-  return response.data;
+  if (isAuthenticated()) {
+    const response = await api.get(`/api/recommendations?limit=${limit}`);
+    return response.data;
+  } else {
+    // Fallback to test route in development
+    const response = await api.get(`/api/recommendations/test/${TEST_USER_ID}?limit=${limit}`);
+    return response.data;
+  }
 };
 
 export const getDailyRecommendation = async () => {
-  // Use test route to bypass authentication issues
-  const response = await api.get(`/api/recommendations/test-daily/${TEST_USER_ID}`);
-  return response.data;
+  if (isAuthenticated()) {
+    const response = await api.get('/api/recommendations/daily');
+    return response.data;
+  } else {
+    // Fallback to test route in development
+    const response = await api.get(`/api/recommendations/test-daily/${TEST_USER_ID}`);
+    return response.data;
+  }
 };
 
 export const getNewReleases = async (limit = 5) => {
-  // Use test route to bypass authentication issues
-  const response = await api.get(`/api/recommendations/test-new-releases/${TEST_USER_ID}?limit=${limit}`);
-  return response.data;
+  if (isAuthenticated()) {
+    const response = await api.get(`/api/recommendations/new-releases?limit=${limit}`);
+    return response.data;
+  } else {
+    // Fallback to test route in development
+    const response = await api.get(`/api/recommendations/test-new-releases/${TEST_USER_ID}?limit=${limit}`);
+    return response.data;
+  }
 };
 
 export const getGenericNewReleases = async (limit = 5) => {
-  // Use test route to bypass authentication issues
-  const response = await api.get(`/api/recommendations/test-generic-new-releases?limit=${limit}`);
+  // This endpoint doesn't require authentication
+  const response = await api.get(`/api/recommendations/generic-new-releases?limit=${limit}`);
   return response.data;
 };
 
 export const getSimilarBooks = async (bookId, limit = 5) => {
-  // Use test route to bypass authentication issues
-  const response = await api.get(`/api/recommendations/test-similar/${TEST_USER_ID}/${bookId}?limit=${limit}`);
-  return response.data;
+  if (isAuthenticated()) {
+    const response = await api.get(`/api/recommendations/similar/${bookId}?limit=${limit}`);
+    return response.data;
+  } else {
+    // Fallback to test route in development
+    const response = await api.get(`/api/recommendations/test-similar/${TEST_USER_ID}/${bookId}?limit=${limit}`);
+    return response.data;
+  }
 };
 
 export const updateUserAIProfile = async () => {
@@ -147,21 +187,36 @@ export const updateUserAIProfile = async () => {
 
 // Favorite books API calls
 export const getFavorites = async () => {
-  // Use test route to bypass authentication issues
-  const response = await api.get(`/api/favorites/test/${TEST_USER_ID}`);
-  return response.data;
+  if (isAuthenticated()) {
+    const response = await api.get('/api/favorites');
+    return response.data;
+  } else {
+    // Fallback to test route in development
+    const response = await api.get(`/api/favorites/test/${TEST_USER_ID}`);
+    return response.data;
+  }
 };
 
 export const addToFavorites = async (bookId) => {
-  // Use test route to bypass authentication issues
-  const response = await api.post(`/api/favorites/test/${TEST_USER_ID}`, { bookId });
-  return response.data;
+  if (isAuthenticated()) {
+    const response = await api.post('/api/favorites', { bookId });
+    return response.data;
+  } else {
+    // Fallback to test route in development
+    const response = await api.post(`/api/favorites/test/${TEST_USER_ID}`, { bookId });
+    return response.data;
+  }
 };
 
 export const removeFromFavorites = async (bookId) => {
-  // Use test route to bypass authentication issues
-  const response = await api.delete(`/api/favorites/test/${TEST_USER_ID}/${bookId}`);
-  return response.data;
+  if (isAuthenticated()) {
+    const response = await api.delete(`/api/favorites/${bookId}`);
+    return response.data;
+  } else {
+    // Fallback to test route in development
+    const response = await api.delete(`/api/favorites/test/${TEST_USER_ID}/${bookId}`);
+    return response.data;
+  }
 };
 
 // Book view tracking API for improving recommendations

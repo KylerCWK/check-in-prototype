@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
+const { validationChains } = require('../middleware/validation');
+const { requireDevelopment, devAuthBypass } = require('../middleware/devAuth');
 const User = require('../models/User');
 const Book = require('../models/Book');
 const ReadingProfile = require('../models/ReadingProfile');
@@ -11,7 +13,7 @@ const ReadingProfile = require('../models/ReadingProfile');
  * @desc    Get user's favorite books
  * @access  Private
  */
-router.get('/', auth, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         
@@ -53,17 +55,10 @@ router.get('/', auth, async (req, res) => {
  * @desc    Add a book to favorites
  * @access  Private
  */
-router.post('/', auth, async (req, res) => {
+router.post('/', authMiddleware, validationChains.addFavorite, async (req, res) => {
     try {
         const userId = req.user.id;
         const { bookId } = req.body;
-        
-        if (!bookId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Book ID is required'
-            });
-        }
         
         // Check if book exists
         const book = await Book.findById(bookId);
@@ -128,10 +123,18 @@ router.post('/', auth, async (req, res) => {
  * @desc    Remove a book from favorites
  * @access  Private
  */
-router.delete('/:bookId', auth, async (req, res) => {
+router.delete('/:bookId', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         const { bookId } = req.params;
+        
+        // Basic validation
+        if (!bookId || !bookId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid book ID is required'
+            });
+        }
         
         // Get user's reading profile
         const profile = await ReadingProfile.findOne({ user: userId });
@@ -173,17 +176,23 @@ router.delete('/:bookId', auth, async (req, res) => {
     }
 });
 
-// Test routes for development (bypassing authentication)
-const TEST_USER_ID = '64b5c8f123456789abcdef12'; // Test user ID
-
+// Development-only test routes (bypassing authentication)
 /**
  * @route   GET /api/favorites/test/:userId
  * @desc    Get user's favorite books (test route)
- * @access  Public (for testing only)
+ * @access  Public (for testing only - disabled in production)
  */
-router.get('/test/:userId', async (req, res) => {
+router.get('/test/:userId', requireDevelopment, async (req, res) => {
     try {
         const userId = req.params.userId;
+        
+        // Basic validation
+        if (!userId || !userId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid user ID is required'
+            });
+        }
         
         // Get user's reading profile
         const profile = await ReadingProfile.findOne({ user: userId })
@@ -222,12 +231,27 @@ router.get('/test/:userId', async (req, res) => {
 /**
  * @route   POST /api/favorites/test/:userId
  * @desc    Add a book to favorites (test route)
- * @access  Public (for testing only)
+ * @access  Public (for testing only - disabled in production)
  */
-router.post('/test/:userId', async (req, res) => {
+router.post('/test/:userId', requireDevelopment, async (req, res) => {
     try {
         const userId = req.params.userId;
         const { bookId } = req.body;
+        
+        // Basic validation
+        if (!userId || !userId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid user ID is required'
+            });
+        }
+        
+        if (!bookId || !bookId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid book ID is required'
+            });
+        }
         
         if (!bookId) {
             return res.status(400).json({
@@ -353,49 +377,6 @@ router.post('/test/:userId', async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'Error adding book to favorites'
-        });
-    }
-});
-
-/**
- * @route   DELETE /api/favorites/test/:userId/:bookId
- * @desc    Remove a book from favorites (test route)
- * @access  Public (for testing only)
- */
-router.delete('/test/:userId/:bookId', async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        const bookId = req.params.bookId;
-        
-        // Get user's reading profile
-        const profile = await ReadingProfile.findOne({ user: userId });
-        
-        if (!profile) {
-            return res.status(404).json({
-                success: false,
-                message: 'Reading profile not found'
-            });
-        }
-        
-        // Find and update the book entry
-        const entry = profile.readingHistory.find(
-            entry => entry.book && entry.book.toString() === bookId
-        );
-        
-        if (entry) {
-            entry.favorite = false;
-            await profile.save();
-        }
-        
-        return res.json({
-            success: true,
-            message: 'Book removed from favorites'
-        });
-    } catch (error) {
-        console.error('Error removing test favorite:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Error removing book from favorites'
         });
     }
 });
