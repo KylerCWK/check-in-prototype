@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomePage from './components/HomePage.vue';
-import QRCodeGenerator from './components/QRCodeGenerator.vue';
 import CompanyQRGenerator from './components/CompanyQRGenerator.vue';
 import LoginPage from './components/LoginPage.vue';
 import RegisterPage from './components/RegisterPage.vue';
@@ -64,7 +63,6 @@ const routes = [
   { path: '/about', component: AboutPage },
   { path: '/pricing', component: PricingPage },
   { path: '/api', component: APIPage },
-  { path: '/qrcode', component: QRCodeGenerator, beforeEnter: requireAuth },
   { path: '/admin', component: AdminDashboard, beforeEnter: requireAuth },
   { path: '/dashboard', component: UserDashboard, beforeEnter: requireAuth },
   { path: '/catalog', component: CatalogPage, beforeEnter: requireAuth },
