@@ -2,8 +2,12 @@ const express = require('express');
 const router = express.Router();
 const Book = require('../models/Book');
 const embeddingService = require('../services/embeddingService');
+const BookDescriptionService = require('../services/bookDescriptionService');
 const { validationChains } = require('../middleware/validation');
 const { optionalAuth } = require('../middleware/auth');
+
+// Initialize description service
+const descriptionService = new BookDescriptionService();
 
 // Get paginated catalog with filters
 router.get('/', optionalAuth, async (req, res) => {
@@ -81,12 +85,27 @@ router.get('/', optionalAuth, async (req, res) => {
             .sort(sortOptions)
             .skip((page - 1) * limit)
             .limit(limit)
-            .select('title author coverUrl genres description stats publishDate aiAnalysis.themes aiAnalysis.moodTags'); // Select only needed fields
+            .select('title author coverUrl genres description stats publishDate aiAnalysis.themes aiAnalysis.moodTags aiAnalysis.enhancedDescription'); // Include enhanced description
         
         const books = await booksQuery;
         
+        // Enhance books with best available descriptions
+        const enhancedBooks = books.map(book => {
+            const bookObj = book.toObject();
+            const descriptionInfo = descriptionService.getBookDescription(book);
+            
+            return {
+                ...bookObj,
+                displayDescription: {
+                    text: descriptionInfo.text,
+                    type: descriptionInfo.type,
+                    fallback: descriptionInfo.fallback
+                }
+            };
+        });
+        
         res.json({
-            books,
+            books: enhancedBooks,
             pagination: {
                 total,
                 page,
@@ -183,21 +202,37 @@ router.get('/metadata', async (req, res) => {
     }
 });
 
-// Get book details by ID
-router.get('/:id', validationChains.catalogById, optionalAuth, async (req, res) => {
+// Get book by ID
+router.get('/:id', optionalAuth, async (req, res) => {
     try {
-        const book = await Book.findById(req.params.id);
+        const book = await Book.findById(req.params.id)
+            .select('title author coverUrl genres description stats publishDate aiAnalysis metadata olid');
+        
         if (!book) {
             return res.status(404).json({ message: 'Book not found' });
         }
+
+        // Enhance with best available description
+        const bookObj = book.toObject();
+        const descriptionInfo = descriptionService.getBookDescription(book);
         
+        const enhancedBook = {
+            ...bookObj,
+            displayDescription: {
+                text: descriptionInfo.text,
+                type: descriptionInfo.type,
+                fallback: descriptionInfo.fallback
+            }
+        };
+
         // Increment view count
-        book.stats.viewCount += 1;
-        await book.save();
-        
-        res.json(book);
+        await Book.findByIdAndUpdate(req.params.id, {
+            $inc: { 'stats.viewCount': 1 }
+        });
+
+        res.json(enhancedBook);
     } catch (error) {
-        console.error('Error fetching book:', error);
+        console.error('Error fetching book details:', error);
         res.status(500).json({ message: 'Error fetching book details' });
     }
 });
@@ -230,6 +265,7 @@ router.post('/semantic-search', validationChains.semanticSearch, optionalAuth, a
                     coverUrl: 1,
                     genres: 1,
                     description: 1,
+                    'aiAnalysis.enhancedDescription': 1,
                     stats: 1,
                     publishDate: 1,
                     'aiAnalysis.themes': 1,
@@ -246,9 +282,23 @@ router.post('/semantic-search', validationChains.semanticSearch, optionalAuth, a
         ];
 
         const books = await Book.aggregate(pipeline);
+        
+        // Enhance books with best available descriptions
+        const enhancedBooks = books.map(book => {
+            const descriptionInfo = descriptionService.getBookDescription(book);
+            
+            return {
+                ...book,
+                displayDescription: {
+                    text: descriptionInfo.text,
+                    type: descriptionInfo.type,
+                    fallback: descriptionInfo.fallback
+                }
+            };
+        });
 
         res.json({
-            books,
+            books: enhancedBooks,
             searchType: 'semantic',
             pagination: {
                 page,

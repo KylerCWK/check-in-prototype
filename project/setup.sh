@@ -33,12 +33,36 @@ echo "Client .env file created."
 # Create server .env file
 echo "Creating server .env file..."
 mkdir -p ./server
+
+# Check for required environment variables
+if [ -z "$MONGODB_URI" ]; then
+    echo "❌ ERROR: MONGODB_URI environment variable is required"
+    echo "Please set it with: export MONGODB_URI='your_mongodb_connection_string'"
+    exit 1
+fi
+
+if [ -z "$HUGGINGFACE_API_KEY" ]; then
+    echo "❌ ERROR: HUGGINGFACE_API_KEY environment variable is required"
+    echo "Please set it with: export HUGGINGFACE_API_KEY='your_huggingface_api_key'"
+    exit 1
+fi
+
+# Generate JWT secret if not provided
+JWT_SECRET=${JWT_SECRET:-$(openssl rand -hex 32)}
+
 cat > ./server/.env << EOL
 PORT=$SERVER_PORT
-MONGO_URI=mongodb+srv://isaiahbyrd:MWKSNYxsjFkwOyoi@qrlibrarycluster.broyvae.mongodb.net/qrlibrary?retryWrites=true&w=majority
-JWT_SECRET=my_secure_jwt_secret_key_$(openssl rand -hex 32)
+MONGODB_URI=$MONGODB_URI
+MONGO_URI=$MONGODB_URI
+JWT_SECRET=$JWT_SECRET
+
+# Embedding Service Configuration
+EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-huggingface}
+EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+EMBEDDING_DIMENSIONS=${EMBEDDING_DIMENSIONS:-384}
+HUGGINGFACE_API_KEY=$HUGGINGFACE_API_KEY
 EOL
-echo "Server .env file created."
+echo "✅ Server .env file created from environment variables."
 
 # Install dependencies
 echo "Installing dependencies..."

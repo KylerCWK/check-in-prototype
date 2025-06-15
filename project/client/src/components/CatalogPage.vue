@@ -136,15 +136,15 @@
                   <button class="list-action-btn" title="View details" @click="openBookDetails(book)">ℹ️</button>
                 </div>
               </div>
-              <p class="author">{{ book.author }}</p>
-
-              <div class="list-ai-section">
+              <p class="author">{{ book.author }}</p>              <div class="list-ai-section">
                 <!-- AI Badge and Summary -->
                 <span class="ai-badge">AI Insights</span>
-                <p class="ai-summary">{{ aiSummary }}</p>
+                <p class="ai-summary">{{ getAiSummary(book) }}</p>
               </div>
 
-              <p class="description" v-if="book.description">{{ truncateDescription(book.description, 150) }}</p>
+              <p class="description" v-if="book.displayDescription?.text || book.description">
+                {{ truncateDescription(book.displayDescription?.text || book.description, 150) }}
+              </p>
               <div class="list-footer">
                 <div class="top-row">
                   <div class="genres">
@@ -229,16 +229,15 @@
                   </button>
                 </div>
               </div>
-            </div>
-
-            <div class="book-description">
+            </div>            <div class="book-description">
               <h3>Description</h3>
-              <p>{{ selectedBook.description || 'No description available.' }}</p>
-            </div>
-
-            <div class="book-ai-insights">
+              <p>{{ getMainDescription(selectedBook) }}</p>
+              <div v-if="selectedBook.displayDescription?.type" class="description-type">
+                <small>{{ getDescriptionTypeLabel(selectedBook.displayDescription.type) }}</small>
+              </div>
+            </div><div class="book-ai-insights">
               <h3>AI Insights</h3>
-              <p>{{ aiSummary }}</p>
+              <p>{{ getAiSummary(selectedBook) }}</p>
               <div class="ai-tags">
                 <span class="ai-tag">{{ getAiMoodTag(selectedBook) }}</span>
                 <span class="ai-reading-level">{{ getReadingLevel(selectedBook) }}</span>
@@ -274,14 +273,11 @@ export default {
     const selectedGenre = ref('');
     const currentPage = ref(1);
     const viewMode = ref('grid'); // grid or list
-    const searchPlaceholder = ref('Search by title, author, or genre...');
-    const pagination = ref({
+    const searchPlaceholder = ref('Search by title, author, or genre...');    const pagination = ref({
       total: 0,
       page: 1,
       pages: 0
     });
-    const aiSummary = ref('');
-
 
     // Popular tags for quick filtering
     const popularTags = ref([
@@ -308,48 +304,146 @@ export default {
       }
       selectedBook.value = null;
       viewStartTime.value = null;
-    };
-
-    // AI Utility functions
-    const getAiSummary = async (book) => {
-      if (book.aiSummary) return book.aiSummary;
-
-      try {
-        const response = await fetch('/api/ai-summary/summary', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: book.title })
-        });
-
-        const data = await response.json();
-        console.log('AI summary response:', data);
-
-        return data.summary || "Could not generate summary.";
-      } catch (error) {
-        console.error('AI summary error:', error);
-        return "This book features themes and content that might interest readers who enjoy similar works in this genre.";
+    };    // AI Utility functions
+    const getAiSummary = (book) => {
+      // Check if we have enhanced description with AI insights
+      if (book.aiAnalysis?.enhancedDescription) {
+        const enhancedDesc = book.aiAnalysis.enhancedDescription;
+        
+        // Extract AI insights section if it exists
+        if (enhancedDesc.includes('AI Insights')) {
+          const parts = enhancedDesc.split('AI Insights');
+          if (parts.length > 1) {
+            // Get the AI insights part and clean it up
+            let aiInsights = parts[1].trim();
+            // Remove any leading newlines or formatting
+            aiInsights = aiInsights.replace(/^\n+/, '').trim();
+              // Return the full AI insights if they exist and are meaningful
+            if (aiInsights.length > 50) {
+              return aiInsights;
+            }
+          }
+        }
+        
+        // Generate insight based on themes if available in aiAnalysis
+        if (book.aiAnalysis?.themes?.length > 0) {
+          const themes = book.aiAnalysis.themes.slice(0, 2).join(' and ');
+          return `This compelling work explores ${themes}, offering readers deep insights into human nature and society. A thoughtful read that resonates long after the final page.`;
+        }
+        
+        // Use enhanced description to create summary if no AI insights found
+        const words = enhancedDesc.split(' ');
+        if (words.length > 20) {
+          // Try to find the main description part (before AI Insights)
+          const mainDesc = enhancedDesc.split('AI Insights')[0].trim();
+          if (mainDesc.length > 100) {
+            return `${mainDesc.substring(0, 150)}... This work offers readers an immersive experience that showcases the author's storytelling mastery.`;
+          }
+        }
       }
+      
+      // Genre-specific fallbacks for books without AI insights
+      if (book.genres?.includes('Fantasy')) {
+        return `A magical tale that transports readers to new worlds. Perfect for those who love escapist fiction with rich world-building and memorable characters.`;
+      } else if (book.genres?.includes('Mystery')) {
+        return `A suspenseful mystery that keeps readers guessing until the final revelation. Ideal for fans of puzzles, detective work, and psychological intrigue.`;
+      } else if (book.genres?.includes('Romance')) {
+        return `An emotional journey that explores the complexities of love and relationships. Great for readers seeking both heartwarming moments and character development.`;
+      } else if (book.genres?.includes('Science Fiction')) {
+        return `A thought-provoking exploration of future possibilities and human nature. Appeals to readers interested in technology, society, and philosophical questions.`;
+      } else if (book.genres?.includes('Horror')) {
+        return `A chilling experience that builds tension and atmosphere masterfully. Perfect for readers who enjoy psychological thrills and supernatural elements.`;
+      }
+      
+      // Final fallback for books without enhanced descriptions
+      const genre = book.genres?.[0] || 'book';
+      const genreInsights = {
+        'Fiction': 'A compelling narrative that explores the human experience through vivid storytelling.',
+        'Biography': 'An inspiring look into a remarkable life, offering insights and lessons for readers.',
+        'History': 'A fascinating exploration of past events that illuminate our present understanding.',
+        'Philosophy': 'A thought-provoking work that challenges readers to examine fundamental questions.',
+        'Science': 'An enlightening exploration of scientific concepts and discoveries.'
+      };
+      
+      return genreInsights[genre] || `This ${genre.toLowerCase()} offers engaging content that resonates with readers interested in quality literature.`;
     };
-
-
-
 
     const getAiMoodTag = (book) => {
-      // Return AI-generated mood tag or a default
-      const possibleMoods = ["Inspirational", "Mysterious", "Thrilling", "Heartwarming", "Thought-provoking", "Adventurous"];
-      return book.aiMoodTag || possibleMoods[Math.floor(Math.random() * possibleMoods.length)];
+      // Use actual AI mood tags if available
+      if (book.aiAnalysis?.moodTags?.length > 0) {
+        return book.aiAnalysis.moodTags[0];
+      }
+      
+      // Generate mood based on genre
+      const genreMoods = {
+        'Fantasy': 'Magical',
+        'Science Fiction': 'Futuristic', 
+        'Mystery': 'Suspenseful',
+        'Romance': 'Heartwarming',
+        'Horror': 'Thrilling',
+        'Biography': 'Inspiring',
+        'Historical': 'Immersive',
+        'Contemporary': 'Relatable'
+      };
+      
+      const primaryGenre = book.genres?.[0];
+      return genreMoods[primaryGenre] || 'Engaging';
     };
 
     const getComplexityLevel = (book) => {
-      // Return AI-generated complexity level or a default
-      const levels = ["Easy", "Moderate", "Advanced"];
-      return book.complexityLevel || levels[Math.floor(Math.random() * levels.length)];
+      // Use AI complexity score if available
+      if (book.aiAnalysis?.complexityScore !== undefined) {
+        const score = book.aiAnalysis.complexityScore;
+        if (score <= 3) return 'Easy';
+        if (score <= 7) return 'Moderate';
+        return 'Complex';
+      }
+      
+      // Determine complexity based on genre and reading level
+      const complexGenres = ['Academic', 'Philosophy', 'Science', 'Technical'];
+      const easyGenres = ['Children', 'Young Adult', 'Romance'];
+      
+      const hasComplexGenre = book.genres?.some(g => complexGenres.some(cg => g.includes(cg)));
+      const hasEasyGenre = book.genres?.some(g => easyGenres.some(eg => g.includes(eg)));
+      
+      if (hasComplexGenre) return 'Complex';
+      if (hasEasyGenre) return 'Easy';
+      return 'Moderate';
     };
 
     const getReadingLevel = (book) => {
-      // Return AI-generated reading level or a default
-      const levels = ["General", "Young Adult", "Academic", "Professional"];
-      return book.readingLevel || levels[Math.floor(Math.random() * levels.length)];
+      // Use metadata reading level if available
+      if (book.metadata?.readingLevel) {
+        const levelMap = {
+          'elementary': 'Elementary',
+          'middle': 'Middle School',
+          'high_school': 'High School',
+          'college': 'College',
+          'graduate': 'Graduate'
+        };
+        return levelMap[book.metadata.readingLevel] || 'General';
+      }
+      
+      // Determine reading level based on genres
+      if (book.genres?.some(g => g.includes('Children') || g.includes('Picture'))) {
+        return 'Elementary';
+      }
+      if (book.genres?.some(g => g.includes('Young Adult') || g.includes('Teen'))) {
+        return 'Young Adult';
+      }
+      if (book.genres?.some(g => g.includes('Academic') || g.includes('Textbook'))) {
+        return 'Academic';
+      }      
+      return 'General';
+    };
+
+    const getDescriptionTypeLabel = (type) => {
+      const labels = {
+        'ai_enhanced': 'AI Enhanced Description',
+        'original': 'Original Description',
+        'fallback': 'Generated Description'
+      };
+      return labels[type] || 'Description';
     };
 
     const getReadingTime = (book) => {
@@ -617,9 +711,24 @@ export default {
         }
       } else {
         aiSummary.value = '';
-      }
-    });
+      }    });
 
+    // Helper function to extract main description (without AI insights)
+    const getMainDescription = (book) => {
+      const fullDescription = book.displayDescription?.text || book.aiAnalysis?.enhancedDescription || book.description;
+      
+      if (!fullDescription) {
+        return 'No description available.';
+      }
+      
+      // If the description contains AI insights, split it and return only the main part
+      if (fullDescription.includes('AI Insights')) {
+        const mainPart = fullDescription.split('AI Insights')[0].trim();
+        return mainPart || 'No description available.';
+      }
+      
+      return fullDescription;
+    };
 
     return {
       books,
@@ -643,11 +752,12 @@ export default {
       selectTag,
       updateSearchPlaceholder,
       truncateDescription,
+      getMainDescription,
       getAiSummary,
-      aiSummary,
       getAiMoodTag,
       getComplexityLevel,
       getReadingLevel,
+      getDescriptionTypeLabel,
       getReadingTime,
       addToFavorites,
       openBookDetails,

@@ -99,7 +99,7 @@ const CompanySchema = new mongoose.Schema({
 
 // Indexes for better performance
 CompanySchema.index({ name: 1 });
-CompanySchema.index({ code: 1 }, { unique: true });
+CompanySchema.index({ code: 1 });
 CompanySchema.index({ 'members.user': 1 });
 CompanySchema.index({ 'members.status': 1 });
 CompanySchema.index({ 'domains': 1 });

@@ -95,11 +95,10 @@ const startServer = (port) => {
           console.error(`Failed to write server configuration: ${err.message}`);
         }
         resolve(server);
-      })
-      .on('error', (err) => {
+      })      .on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
-          console.log(`Port ${port} is busy, trying port ${port + 1}...`);
-          resolve(startServer(port + 1));
+          console.log(`Port ${port} is busy, trying port ${parseInt(port) + 1}...`);
+          resolve(startServer(parseInt(port) + 1));
         } else {
           reject(err);
         }

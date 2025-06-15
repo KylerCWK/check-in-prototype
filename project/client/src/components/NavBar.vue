@@ -561,6 +561,29 @@ export default {
   transform: translateY(0);
 }
 
+.user-dropdown .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  margin: 0 0.5rem;
+}
+
+.user-dropdown .dropdown-item:hover {
+  background: #f5f7f9;
+  color: #2364AA;
+}
+
+.user-dropdown .dropdown-item .dropdown-icon {
+  font-size: 1.1rem;
+  opacity: 0.8;
+}
+
 .dropdown-section {
   padding: 0.75rem;
 }

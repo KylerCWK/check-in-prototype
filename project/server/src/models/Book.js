@@ -47,6 +47,10 @@ const BookSchema = new mongoose.Schema({
     
     // Advanced AI analysis
     aiAnalysis: {
+        // Enhanced descriptions
+        enhancedDescription: String, // AI-generated compelling description
+        lastDescriptionUpdate: Date,
+        
         themes: [String],
         moodTags: [String],
         characters: [{
@@ -187,7 +191,9 @@ BookSchema.index({
     author: 'text', 
     'genres': 'text',
     'topics': 'text',
-    description: 'text'
+    description: 'text',
+    'aiAnalysis.themes': 'text',
+    'aiAnalysis.moodTags': 'text'
 });
 
 BookSchema.index({ 'aiAnalysis.clusters.thematicCluster': 1 });
@@ -195,19 +201,10 @@ BookSchema.index({ 'aiAnalysis.clusters.genreCluster': 1 });
 BookSchema.index({ 'aiAnalysis.complexityScore': 1 });
 BookSchema.index({ 'stats.rating': -1, 'stats.viewCount': -1 });
 BookSchema.index({ 'stats.trending.weekly': -1 });
+BookSchema.index({ 'stats.trending.daily': -1 });
 BookSchema.index({ 'processing.needsReprocessing': 1 });
 BookSchema.index({ publishDate: -1 });
 BookSchema.index({ genres: 1, 'aiAnalysis.complexityScore': 1 });
-
-// Text search index for MongoDB Atlas Search
-BookSchema.index({ 
-    title: 'text', 
-    author: 'text', 
-    description: 'text',
-    genres: 'text',
-    'aiAnalysis.themes': 'text',
-    'aiAnalysis.moodTags': 'text'
-});
 
 // Vector search index for MongoDB Atlas Vector Search (knnVector)
 // Note: This needs to be created in MongoDB Atlas UI or via mongosh
@@ -216,10 +213,6 @@ BookSchema.index({
 // Traditional indexes for filtering and sorting
 BookSchema.index({ genres: 1 });
 BookSchema.index({ author: 1 });
-BookSchema.index({ publishDate: -1 });
-BookSchema.index({ 'stats.rating': -1 });
-BookSchema.index({ 'stats.viewCount': -1 });
-BookSchema.index({ 'stats.trending.daily': -1 });
 
 // Compound indexes for recommendation queries
 BookSchema.index({ 

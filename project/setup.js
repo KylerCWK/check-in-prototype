@@ -89,14 +89,56 @@ VITE_API_BASE_URL=http://localhost:${serverPort}
     
     // Create server .env file
     const serverEnvPath = path.join(SERVER_DIR, '.env');
-    const jwtSecret = generateJwtSecret();
+    
+    // Load existing environment variables from server .env if it exists
+    let existingEnv = {};
+    if (fs.existsSync(serverEnvPath)) {
+      const existingEnvContent = fs.readFileSync(serverEnvPath, 'utf8');
+      existingEnvContent.split('\n').forEach(line => {
+        const [key, value] = line.split('=');
+        if (key && value) {
+          existingEnv[key.trim()] = value.trim();
+        }
+      });
+      console.log('Loaded existing server .env file');
+    }
+    
+    // Check for required environment variables (from existing .env or shell environment)
+    const mongodbUri = existingEnv.MONGODB_URI || process.env.MONGODB_URI;
+    const huggingfaceApiKey = existingEnv.HUGGINGFACE_API_KEY || process.env.HUGGINGFACE_API_KEY;
+    
+    if (!mongodbUri) {
+      console.error('❌ ERROR: MONGODB_URI environment variable is required');
+      console.error('Please set it in server/.env file or as environment variable');
+      console.error('Format: MONGODB_URI=your_mongodb_connection_string');
+      process.exit(1);
+    }
+    
+    if (!huggingfaceApiKey) {
+      console.error('❌ ERROR: HUGGINGFACE_API_KEY environment variable is required');
+      console.error('Please set it in server/.env file or as environment variable');
+      console.error('Format: HUGGINGFACE_API_KEY=your_huggingface_api_key');
+      process.exit(1);
+    }
+    
+    // Generate JWT secret if not provided
+    const jwtSecret = existingEnv.JWT_SECRET || process.env.JWT_SECRET || generateJwtSecret();
+    
     const serverEnvContent = `PORT=${serverPort}
-MONGO_URI=mongodb+srv://isaiahbyrd:MWKSNYxsjFkwOyoi@qrlibrarycluster.broyvae.mongodb.net/qrlibrary?retryWrites=true&w=majority
+MONGODB_URI=${mongodbUri}
+MONGO_URI=${mongodbUri}
 JWT_SECRET=${jwtSecret}
+
+# Embedding Service Configuration
+EMBEDDING_PROVIDER=${existingEnv.EMBEDDING_PROVIDER || process.env.EMBEDDING_PROVIDER || 'huggingface'}
+EMBEDDING_MODEL=${existingEnv.EMBEDDING_MODEL || process.env.EMBEDDING_MODEL || 'sentence-transformers/all-MiniLM-L6-v2'}
+EMBEDDING_DIMENSIONS=${existingEnv.EMBEDDING_DIMENSIONS || process.env.EMBEDDING_DIMENSIONS || '384'}
+HUGGINGFACE_API_KEY=${huggingfaceApiKey}
 `;
 
     fs.writeFileSync(serverEnvPath, serverEnvContent);
-    console.log(`Created server .env file at ${serverEnvPath}`);
+    console.log(`✅ Created/updated server .env file`);
+    console.log('✅ Configured Hugging Face embedding service');
     
     // Create server config file
     const serverConfigPath = path.join(SERVER_DIR, 'server-config.json');
