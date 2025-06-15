@@ -141,7 +141,7 @@
               <div class="list-ai-section">
                 <!-- AI Badge and Summary -->
                 <span class="ai-badge">AI Insights</span>
-                <p class="ai-summary">{{ getAiSummary(book) }}</p>
+                <p class="ai-summary">{{ aiSummary }}</p>
               </div>
 
               <p class="description" v-if="book.description">{{ truncateDescription(book.description, 150) }}</p>
@@ -195,18 +195,19 @@
           Next &raquo;
         </button>
       </div>
-      
+
       <!-- Book Details Modal -->
       <div v-if="selectedBook" class="modal-overlay" @click.self="closeBookDetails">
         <div class="modal-content">
           <div class="modal-close" @click="closeBookDetails">&times;</div>
-          
+
           <div class="book-details">
             <div class="book-details-header">
               <div class="book-details-cover">
-                <img :src="selectedBook.coverUrl || '/default-cover.png'" :alt="selectedBook.title" @error="handleImageError" />
+                <img :src="selectedBook.coverUrl || '/default-cover.png'" :alt="selectedBook.title"
+                  @error="handleImageError" />
               </div>
-              
+
               <div class="book-details-info">
                 <h2>{{ selectedBook.title }}</h2>
                 <p class="author">by {{ selectedBook.author }}</p>
@@ -229,15 +230,15 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="book-description">
               <h3>Description</h3>
               <p>{{ selectedBook.description || 'No description available.' }}</p>
             </div>
-            
+
             <div class="book-ai-insights">
               <h3>AI Insights</h3>
-              <p>{{ getAiSummary(selectedBook) }}</p>
+              <p>{{ aiSummary }}</p>
               <div class="ai-tags">
                 <span class="ai-tag">{{ getAiMoodTag(selectedBook) }}</span>
                 <span class="ai-reading-level">{{ getReadingLevel(selectedBook) }}</span>
@@ -279,6 +280,8 @@ export default {
       page: 1,
       pages: 0
     });
+    const aiSummary = ref('');
+
 
     // Popular tags for quick filtering
     const popularTags = ref([
@@ -289,14 +292,14 @@ export default {
     // Modal view to show book details
     const selectedBook = ref(null);
     const viewStartTime = ref(null);
-    
+
     const showBookDetails = (book) => {
       selectedBook.value = book;
       viewStartTime.value = Date.now();
       // Track the view immediately to increment view count
       trackView(book._id, 0);
     };
-    
+
     const closeBookDetails = () => {
       if (selectedBook.value && viewStartTime.value) {
         // Calculate view duration in seconds when closing details
@@ -306,12 +309,30 @@ export default {
       selectedBook.value = null;
       viewStartTime.value = null;
     };
-    
+
     // AI Utility functions
-    const getAiSummary = (book) => {
-      // Return AI-generated summary or a default message
-      return book.aiSummary || "This book features themes and content that might interest readers who enjoy similar works in this genre.";
+    const getAiSummary = async (book) => {
+      if (book.aiSummary) return book.aiSummary;
+
+      try {
+        const response = await fetch('/api/ai-summary/summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: book.title })
+        });
+
+        const data = await response.json();
+        console.log('AI summary response:', data);
+
+        return data.summary || "Could not generate summary.";
+      } catch (error) {
+        console.error('AI summary error:', error);
+        return "This book features themes and content that might interest readers who enjoy similar works in this genre.";
+      }
     };
+
+
+
 
     const getAiMoodTag = (book) => {
       // Return AI-generated mood tag or a default
@@ -343,7 +364,7 @@ export default {
       const times = ["2-3 hrs", "4-5 hrs", "6-8 hrs", "10+ hrs"];
       return book.readingTime || times[Math.floor(Math.random() * times.length)];
     };
-    
+
     const trackView = async (bookId, viewDuration) => {
       try {
         // Check if token exists in localStorage before making the API call
@@ -359,7 +380,7 @@ export default {
           }
           return;
         }
-        
+
         await trackBookView(bookId, viewDuration);
         // If it's a short view (initial tracking), don't update the UI
         if (viewDuration > 0) {
@@ -525,7 +546,7 @@ export default {
     const handleBookItemClick = (book) => {
       showBookDetails(book);
     };
-    
+
     // Add click handlers to grid and list view items
     const updateBookClickHandlers = () => {
       // In grid view
@@ -539,7 +560,7 @@ export default {
           }
         });
       });
-      
+
       // In list view
       const listItems = document.querySelectorAll('.book-list-item');
       listItems.forEach(item => {
@@ -554,7 +575,7 @@ export default {
         }
       });
     };
-    
+
     // Call this after books are loaded
     watch(books, () => {
       // Use nextTick to ensure DOM is updated
@@ -571,7 +592,7 @@ export default {
             item.setAttribute('data-book-id', books.value[index]._id);
           }
         });
-        
+
         const listItems = document.querySelectorAll('.book-list-item');
         listItems.forEach(item => {
           const index = Array.from(item.parentNode.children).indexOf(item);
@@ -584,6 +605,21 @@ export default {
 
     watch(books, addBookIds);
     watch(viewMode, () => setTimeout(addBookIds, 100));
+
+    watch(selectedBook, async (newBook) => {
+      if (newBook) {
+        aiSummary.value = 'Loading summary...';
+        try {
+          aiSummary.value = await getAiSummary(newBook);
+        } catch (err) {
+          console.error('Failed to load AI summary:', err);
+          aiSummary.value = 'Error loading summary.';
+        }
+      } else {
+        aiSummary.value = '';
+      }
+    });
+
 
     return {
       books,
@@ -608,6 +644,7 @@ export default {
       updateSearchPlaceholder,
       truncateDescription,
       getAiSummary,
+      aiSummary,
       getAiMoodTag,
       getComplexityLevel,
       getReadingLevel,

@@ -139,6 +139,10 @@ app.use('/api/companies/qr', rateLimits.upload, companyQrRoutes);
 const scanningRoutes = require('./src/routes/scanning');
 app.use('/api/scanning', scanningRoutes);
 
+// Mount AI summary route
+const aiSummaryRoutes = require('./src/routes/aiSummary');
+app.use('/api/ai-summary', aiSummaryRoutes);
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Global error handler:', err);

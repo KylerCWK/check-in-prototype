@@ -10,8 +10,11 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.1",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
     "joi": "^17.13.3",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
