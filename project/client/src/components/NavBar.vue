@@ -4,7 +4,7 @@
       <router-link to="/" class="nav-logo">
         <img src="../assets/logo_icon2.png" alt="QRBook Logo" class="logo-img" />
         <div class="brand-block">
-          <span class="brand-title">QRBook</span>
+          <span class="brand-title">Bookly</span>
           <span class="brand-tagline">Connect with Every Page</span>
         </div>
       </router-link>
