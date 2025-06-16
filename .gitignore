@@ -7,3 +7,6 @@ package-lock.json
 *.log
 *.tsbuildinfo
 server-config.json
+**/server-config.json
+/android/
+/ios/

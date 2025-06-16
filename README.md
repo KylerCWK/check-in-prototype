@@ -1,6 +1,6 @@
 # Check-In Prototype
 
-A QR code-based tool for physical books that instantly provides AI-generated summaries (via Mistral 7B/BART), aggregated reviews (from Open Library/Goodreads), price comparisons (Amazon, Bookshop.org), and personalized recommendations. Targets independent bookstores, libraries, and schools to boost engagement and compete with Amazon’s recommendation engine. Features include dynamic QR code generation, real-time analytics for publishers, and affiliate revenue from price-comparison links. Monetized via tiered subscriptions (Basic, Pro) and freemium upgrades.
+Bookly provides users with access to a large selection of popular books, complete with AI-generated summaries and personalized recommendations. Users can explore titles based on selected genres and add books to their favorites list for future reading. The platform is designed to help readers quickly discover new books they may enjoy, using smart AI features to enhance the experience.
 
 ## Setup Instructions
 
@@ -8,29 +8,46 @@ A QR code-based tool for physical books that instantly provides AI-generated sum
 
 - Node.js (v14 or higher)
 - npm (v6 or higher)
-- MongoDB account (the app uses MongoDB Atlas by default)
+- MongoDB Atlas account
+- Hugging Face account (for AI features)
+
+### Environment Setup (REQUIRED FIRST)
+
+**⚠️ IMPORTANT: Set environment variables BEFORE running setup!**
+
+See `project/SECURITY_SETUP.md` for detailed instructions.
+
+#### Windows (PowerShell)
+```powershell
+$env:MONGODB_URI = "your_mongodb_connection_string"
+$env:HUGGINGFACE_API_KEY = "your_huggingface_api_key"
+```
+
+#### Unix/Linux/macOS
+```bash
+export MONGODB_URI="your_mongodb_connection_string"
+export HUGGINGFACE_API_KEY="your_huggingface_api_key"
+```
 
 ### Quick Setup (Cross-Platform)
 
-The easiest way to set up the application is by running the setup script, which automatically:
-- Finds available ports for both server and client
-- Creates necessary environment files
-- Sets up configuration for cross-environment compatibility
-- Installs dependencies
+After setting environment variables, run the setup script:
 
 ```bash
 # Clone the repository
 git clone https://github.com/KylerCWK/check-in-prototype.git
 cd Check-In-Prototype/project
 
-# Run the setup script
-npm run setup
+# Run the setup script (validates environment variables)
+node setup.js
 
 # Start the application
 npm run dev
 ```
 
 ### Manual Setup
+
+**Note: Manual setup still requires environment variables to be set.**
 
 If you prefer to configure the application manually:
 

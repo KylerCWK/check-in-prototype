@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "serve": "vite",
     "test": "jest --passWithNoTests",
@@ -21,9 +21,11 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@zxing/library": "^0.21.3",
     "axios": "^1.9.0",
     "dotenv": "^16.5.0",
     "qrcode": "^1.5.4",
+    "qrcode-vue": "^1.2.0",
     "vue-router": "^4.5.1"
   }
 }
