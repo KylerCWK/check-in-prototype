@@ -1,6 +1,6 @@
 # Check-In Prototype
 
-A QR code-based tool for physical books that instantly provides AI-generated summaries (via Mistral 7B/BART), aggregated reviews (from Open Library/Goodreads), price comparisons (Amazon, Bookshop.org), and personalized recommendations. Targets independent bookstores, libraries, and schools to boost engagement and compete with Amazon’s recommendation engine. Features include dynamic QR code generation, real-time analytics for publishers, and affiliate revenue from price-comparison links. Monetized via tiered subscriptions (Basic, Pro) and freemium upgrades.
+Bookly provides users with access to a large selection of popular books, complete with AI-generated summaries and personalized recommendations. Users can explore titles based on selected genres and add books to their favorites list for future reading. The platform is designed to help readers quickly discover new books they may enjoy, using smart AI features to enhance the experience.
 
 ## Setup Instructions
 
