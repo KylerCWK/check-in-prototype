@@ -46,7 +46,7 @@
                 @error="handleImageError"
               />
               <div class="book-actions">
-                <button class="info-btn" title="View details">ℹ️</button>
+                <button class="info-btn" title="View details" @click="showBookDetails(book)">ℹ️</button>
                 <button class="remove-btn" @click="removeFromFavorites(book._id)" title="Remove from favorites">❌</button>
               </div>
             </div>
@@ -84,7 +84,7 @@
               <div class="list-header">
                 <h3 class="book-title">{{ book.title }}</h3>
                 <div class="list-actions">
-                  <button class="list-action-btn" title="View details">ℹ️</button>
+                  <button class="list-action-btn" title="View details" @click="showBookDetails(book)">ℹ️</button>
                   <button class="list-action-btn remove-action" @click="removeFromFavorites(book._id)" title="Remove from favorites">❌</button>
                 </div>
               </div>
@@ -118,6 +118,46 @@
         <router-link to="/catalog" class="browse-books-btn">Browse Books</router-link>
       </div>
     </div>
+
+    <!-- Book Details Modal -->
+    <div v-if="selectedBook" class="modal-overlay" @click.self="closeBookDetails">
+      <div class="modal-content">
+        <div class="modal-close" @click="closeBookDetails">&times;</div>
+        
+        <div class="book-details">
+          <div class="book-details-header">
+            <div class="book-cover-large">
+              <img 
+                :src="selectedBook.coverUrl || '/default-cover.png'" 
+                :alt="selectedBook.title"
+                @error="handleImageError"
+              />
+            </div>
+            
+            <div class="book-details-info">
+              <h2>{{ selectedBook.title }}</h2>
+              <h3>by {{ selectedBook.author }}</h3>
+              
+              <div v-if="selectedBook.genres && selectedBook.genres.length" class="book-genres">
+                <span v-for="(genre, index) in selectedBook.genres" :key="index" class="genre-tag">
+                  {{ genre }}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="book-description" v-if="getMainDescription(selectedBook)">
+            <h4>Description</h4>
+            <p>{{ getMainDescription(selectedBook) }}</p>
+          </div>
+          
+          <div class="book-ai-insights">
+            <h4>AI Insights</h4>
+            <p>{{ getAiSummary(selectedBook) }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -133,6 +173,7 @@ export default {
     const favorites = ref([]);
     const viewMode = ref('grid');
     const loading = ref(false);
+    const selectedBook = ref(null);
 
     const loadFavorites = async () => {
       try {
@@ -168,6 +209,64 @@ export default {
       event.target.src = '/default-cover.png';
     };
 
+    const showBookDetails = (book) => {
+      selectedBook.value = book;
+    };
+
+    const closeBookDetails = () => {
+      selectedBook.value = null;
+    };
+
+    // Helper functions for displaying book descriptions and AI insights
+    const getMainDescription = (book) => {
+      const fullDescription = book.displayDescription?.text || book.aiAnalysis?.enhancedDescription || book.description;
+      
+      if (!fullDescription) {
+        return 'No description available.';
+      }
+      
+      // If the description contains AI insights, split it and return only the main part
+      if (fullDescription.includes('AI Insights')) {
+        const mainPart = fullDescription.split('AI Insights')[0].trim();
+        return mainPart || 'No description available.';
+      }
+      
+      return fullDescription;
+    };
+
+    const getAiSummary = (book) => {
+      // Check if we have enhanced description with AI insights
+      if (book.aiAnalysis?.enhancedDescription) {
+        const enhancedDesc = book.aiAnalysis.enhancedDescription;
+        
+        // Extract AI insights section if it exists
+        if (enhancedDesc.includes('AI Insights')) {
+          const parts = enhancedDesc.split('AI Insights');
+          if (parts.length > 1) {
+            // Get the AI insights part and clean it up
+            let aiInsights = parts[1].trim();
+            // Remove any leading newlines or formatting
+            aiInsights = aiInsights.replace(/^\n+/, '').trim();
+            return aiInsights;
+          }
+        }
+      }
+      
+      // Fallback to genre-specific insights
+      if (book.genres?.includes('Fantasy')) {
+        return `A magical tale perfect for escapist fiction lovers.`;
+      } else if (book.genres?.includes('Mystery')) {
+        return `A suspenseful mystery that keeps you guessing.`;
+      } else if (book.genres?.includes('Romance')) {
+        return `An emotional journey exploring love and relationships.`;
+      } else if (book.genres?.includes('Science Fiction')) {
+        return `Thought-provoking exploration of future possibilities.`;
+      }
+      
+      // Final fallback
+      return `Engaging content that resonates with quality literature lovers.`;
+    };
+
     onMounted(async () => {
       await loadFavorites();
       
@@ -187,9 +286,14 @@ export default {
       favorites,
       viewMode,
       loading,
+      selectedBook,
       truncate,
       removeFromFavorites,
-      handleImageError
+      handleImageError,
+      showBookDetails,
+      closeBookDetails,
+      getMainDescription,
+      getAiSummary
     };
   }
 };
@@ -623,6 +727,138 @@ export default {
 
   .genre-tag {
     font-size: 0.7em;
+  }
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #f5f5f5;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  z-index: 1001;
+}
+
+.modal-close:hover {
+  background: #e0e0e0;
+}
+
+.book-details {
+  padding: 2rem;
+}
+
+.book-details-header {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.book-cover-large {
+  width: 200px;
+  height: 300px;
+  flex-shrink: 0;
+}
+
+.book-cover-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.book-details-info h2 {
+  margin: 0 0 0.5rem;
+  color: #2c3e50;
+}
+
+.book-details-info h3 {
+  margin: 0 0 1rem;
+  color: #666;
+  font-weight: normal;
+}
+
+.book-description, .book-ai-insights {
+  margin-bottom: 2rem;
+}
+
+.book-description h4, .book-ai-insights h4 {
+  margin: 0 0 1rem;
+  color: #2364AA;
+}
+
+.book-description p, .book-ai-insights p {
+  line-height: 1.6;
+  color: #444;
+}
+
+.book-genres {
+  margin: 1rem 0;
+}
+
+.book-genres .genre-tag {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
+@media (max-width: 768px) {
+  .book-details-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .book-cover-large {
+    width: 150px;
+    height: 225px;
+  }
+
+  .modal-content {
+    margin: 1rem;
+    max-height: 95vh;
+  }
+
+  .book-details {
+    padding: 1.5rem;
   }
 }
 </style>

@@ -14,8 +14,10 @@ router.get('/', validationChains.recommendations, authMiddleware, async (req, re
     try {
         const userId = req.user.id;
         const limit = parseInt(req.query.limit) || 10;
+        const refresh = req.query.refresh === 'true';
+          console.log('🛣️  Recommendations route called:', { userId, limit, refresh, queryRefresh: req.query.refresh });
         
-        const recommendations = await aiService.getRecommendedBooks(userId, limit);
+        const recommendations = await aiService.getRecommendedBooks(userId, limit, { refresh });
         
         return res.json({
             success: true,
@@ -136,8 +138,11 @@ router.get('/similar/:bookId', authMiddleware, async (req, res) => {
 router.put('/profile', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
+        const preferences = req.body.preferences;
         
-        const updatedProfile = await aiService.updateUserAIProfile(userId);
+        console.log(`Updating AI profile for user ${userId} with preferences:`, preferences);
+        
+        const updatedProfile = await aiService.updateUserAIProfile(userId, preferences);
         if (!updatedProfile) {
             return res.status(404).json({
                 success: false,
@@ -242,9 +247,10 @@ router.get('/test/:userId', requireDevelopment, devAuthBypass, async (req, res) 
     try {
         const userId = req.params.userId;
         const limit = parseInt(req.query.limit) || 5;
+        const refresh = req.query.refresh === 'true';
         
         console.log(`Testing recommendations for user: ${userId}`);
-        const recommendations = await aiService.getRecommendedBooks(userId, limit);
+        const recommendations = await aiService.getRecommendedBooks(userId, limit, { refresh });
         
         return res.json({
             success: true,
@@ -400,6 +406,32 @@ router.get('/test-generic-new-releases', requireDevelopment, async (req, res) =>
             success: false,
             message: 'Error retrieving test generic new releases',
             error: error.message
+        });
+    }
+});
+
+/**
+ * @route   GET /api/recommendations/generic-new-releases
+ * @desc    Get generic new releases (no personalization)
+ * @access  Public
+ */
+router.get('/generic-new-releases', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 5;
+        
+        // Get generic new releases without user personalization
+        const newReleases = await aiService.getGenericNewReleases(limit);
+        
+        return res.json({
+            success: true,
+            count: newReleases.length,
+            data: newReleases
+        });
+    } catch (error) {
+        console.error('Error in generic new releases route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error retrieving generic new releases'
         });
     }
 });

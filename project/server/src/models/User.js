@@ -138,6 +138,46 @@ userSchema.methods.addCompanyAffiliation = async function(companyId, role = 'mem
     return newAffiliation;
 };
 
+// Initialize reading profile for user
+userSchema.methods.initializeReadingProfile = async function() {
+    const ReadingProfile = require('./ReadingProfile');
+    
+    console.log(`Creating reading profile for user: ${this._id}`);
+    
+    const profile = new ReadingProfile({
+        user: this._id,
+        preferences: {
+            favoriteGenres: [],
+            preferredLength: 'medium',
+            readingGoals: {
+                booksPerMonth: 2,
+                currentStreak: 0
+            }
+        },
+        readingHistory: [],
+        aiProfile: {
+            vectors: {
+                primary: [],
+                textual: [],
+                semantic: [],
+                style: [],
+                emotional: []
+            },
+            lastUpdated: new Date(),
+            needsUpdate: false
+        }
+    });
+    
+    await profile.save();
+    
+    // Update user to reference the profile
+    this.readingProfile = profile._id;
+    await this.save();
+    
+    console.log(`✅ Reading profile created successfully for user: ${this._id}`);
+    return profile;
+};
+
 // Index for company affiliations
 userSchema.index({ 'companyAffiliations.company': 1 });
 userSchema.index({ 'companyAffiliations.status': 1 });

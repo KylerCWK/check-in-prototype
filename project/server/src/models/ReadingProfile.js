@@ -380,7 +380,7 @@ ReadingProfileSchema.methods.updatePreferenceVectors = async function() {
     }).filter(Boolean);
     
     // Generate preference vectors (mock implementation)
-    const vectorDim = 768;
+    const vectorDim = 384; // Match Atlas vector index dimensions
     this.aiProfile.vectors.primary = Array.from({ length: vectorDim }, () => Math.random() * 2 - 1);
     this.aiProfile.vectors.genre = Array.from({ length: 256 }, () => Math.random() * 2 - 1);
     this.aiProfile.vectors.style = Array.from({ length: 256 }, () => Math.random() * 2 - 1);

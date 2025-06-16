@@ -9,12 +9,11 @@ const TrackingEventSchema = new mongoose.Schema({
     sessionId: {
         type: String,
         required: true // For anonymous tracking
-    },
-    eventType: {
+    },    eventType: {
         type: String,
         enum: [
             'book_view', 'book_click', 'search', 'filter_apply', 'recommendation_view',
-            'recommendation_click', 'page_visit', 'session_start', 'session_end',
+            'recommendation_click', 'recommendation_refresh', 'page_visit', 'session_start', 'session_end',
             'book_add_to_list', 'book_remove_from_list', 'book_rate', 'book_review',
             'reading_progress_update', 'qr_scan', 'goal_set', 'goal_achieved'
         ],

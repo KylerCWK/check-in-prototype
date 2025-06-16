@@ -101,26 +101,37 @@ class MLRecommendationEngine {
         this.diversityWeight = 0.3;
         this.noveltyWeight = 0.2;
         this.popularityWeight = 0.1;
-    }
-
-    async getRecommendedBooks(userId, limit = 10, options = {}) {
-        try {
+    }    async getRecommendedBooks(userId, limit = 10, options = {}) {        try {            console.log(`=== getRecommendedBooks called ===`);
+            console.log(`userId: ${userId}, limit: ${limit}, refresh: ${!!options.refresh}`);
+            
             const user = await User.findById(userId).populate('readingProfile');
+            console.log(`User found: ${!!user}, Has reading profile: ${!!(user && user.readingProfile)}`);
+            
             if (!user || !user.readingProfile) {
-                return await this.getColdStartRecommendations(limit);
+                console.log('Using cold start recommendations');
+                return await this.getColdStartRecommendations(limit, options);
             }
 
             const profile = await ReadingProfile.findById(user.readingProfile._id);
-            const userBehavior = await UserBehavior.findOne({ userId });
-
-            // Check cache first
-            const cachedRecommendations = recommendationCache.get(userId, 'recommendedBooks', { limit });
-            if (cachedRecommendations) {
-                console.log('Cache hit for recommended books');
-                recommendationAnalytics.recordCacheHit();
-                return cachedRecommendations;
+            const userBehavior = await UserBehavior.findOne({ userId });            // Check cache first (unless refresh is requested)
+            if (!options.refresh) {
+                const cachedRecommendations = recommendationCache.get(userId, 'recommendedBooks', { limit });
+                if (cachedRecommendations) {
+                    console.log('Cache hit for recommended books');
+                    recommendationAnalytics.recordCacheHit();
+                    return cachedRecommendations;
+                } else {
+                    recommendationAnalytics.recordCacheMiss();
+                }
             } else {
-                recommendationAnalytics.recordCacheMiss();
+                console.log('Refresh requested - bypassing cache and forcing fresh recommendations');
+                // Clear ALL cache for this user to force fresh recommendations
+                recommendationCache.invalidateUser(userId);
+                
+                // Add strong randomization to ensure different results
+                options.randomSeed = Date.now() + Math.random() * 1000;
+                options.forceRefresh = true;
+                console.log('Using random seed for refresh:', options.randomSeed);
             }
 
             // Multi-strategy recommendation approach
@@ -131,14 +142,13 @@ class MLRecommendationEngine {
                 { method: 'demographic', weight: 0.1 }
             ];
 
-            let allRecommendations = [];
-
-            for (const strategy of strategies) {
+            let allRecommendations = [];            for (const strategy of strategies) {
                 const strategyRecs = await this.getRecommendationsByStrategy(
                     strategy.method, 
                     profile, 
                     userBehavior, 
-                    Math.ceil(limit * 1.5)
+                    Math.ceil(limit * 1.5),
+                    options
                 );
                 
                 allRecommendations.push(...strategyRecs.map(rec => ({
@@ -150,13 +160,10 @@ class MLRecommendationEngine {
 
             // Aggregate and rank recommendations
             const aggregatedRecs = this.aggregateRecommendations(allRecommendations);
-            
-            // Apply diversity and novelty filters
-            const finalRecs = this.applyDiversityAndNovelty(aggregatedRecs, profile, limit);
-
-            // Generate explanations
+              // Apply diversity and novelty filters
+            const finalRecs = this.applyDiversityAndNovelty(aggregatedRecs, profile, limit, options);            // Generate explanations
             const recommendationsWithMetadata = finalRecs.map(rec => ({
-                ...rec.book.toObject(),
+                ...(rec.book.toObject ? rec.book.toObject() : rec.book),
                 recommendationScore: rec.finalScore,
                 confidence: rec.confidence,
                 reason: this.generateAdvancedReason(rec, profile),
@@ -165,31 +172,56 @@ class MLRecommendationEngine {
                     modelVersion: this.modelVersion,
                     factors: rec.factors
                 }
-            }));
+            }));            // If refresh was requested, add extra randomization to the final results
+            let finalRecommendations = recommendationsWithMetadata;
+            if (options.refresh || options.forceRefresh) {
+                console.log('Applying strong refresh randomization to final recommendations');
+                
+                // Take MORE recommendations for better variety on refresh
+                const candidateRecs = finalRecommendations.slice(0, Math.min(limit * 3, finalRecommendations.length));
+                
+                // Apply strong randomization when refreshing
+                const randomizedRecs = candidateRecs.map(rec => ({
+                    ...rec,
+                    recommendationScore: rec.recommendationScore + (Math.random() * 0.6 - 0.3), // Add ±0.3 randomization (stronger)
+                    refreshRandomizer: Math.random() // Additional randomizer for sorting
+                }));
+                
+                // Sort by both score and random factor, then take selection
+                finalRecommendations = randomizedRecs
+                    .sort((a, b) => {
+                        const scoreA = a.recommendationScore + (a.refreshRandomizer * 0.2);
+                        const scoreB = b.recommendationScore + (b.refreshRandomizer * 0.2);
+                        return scoreB - scoreA;
+                    })
+                    .slice(0, limit);
+                
+                console.log(`Refresh applied: selected ${finalRecommendations.length} from ${candidateRecs.length} candidates`);
+            }
 
-            // Cache the final recommendations
-            recommendationCache.set(userId, 'recommendedBooks', recommendationsWithMetadata, { limit });
+            // Cache the final recommendations (only if not refresh)
+            if (!options.refresh) {
+                recommendationCache.set(userId, 'recommendedBooks', finalRecommendations, { limit });
+            }
 
             // Record analytics for generated recommendations
             recommendationAnalytics.recordRecommendationGenerated('hybrid', 0, true);
 
-            return recommendationsWithMetadata;
+            return finalRecommendations;
 
         } catch (error) {
             console.error('Error in advanced getRecommendedBooks:', error);
             recommendationAnalytics.recordRecommendationGenerated('hybrid', 0, false);
             return await this.getFallbackRecommendations(limit);
         }
-    }
-
-    async getRecommendationsByStrategy(strategy, profile, userBehavior, limit) {
+    }    async getRecommendationsByStrategy(strategy, profile, userBehavior, limit, options = {}) {
         switch (strategy) {
             case 'collaborative':
                 return await this.getCollaborativeRecommendations(profile, userBehavior, limit);
             case 'content':
-                return await this.getContentBasedRecommendations(profile, limit);
+                return await this.getContentBasedRecommendations(profile, limit, options);
             case 'hybrid':
-                return await this.getHybridRecommendations(profile, userBehavior, limit);
+                return await this.getHybridRecommendations(profile, userBehavior, limit, options);
             case 'demographic':
                 return await this.getDemographicRecommendations(profile, userBehavior, limit);
             default:
@@ -263,12 +295,13 @@ class MLRecommendationEngine {
             recommendationAnalytics.recordRecommendationGenerated('collaborative', 0, true);
 
             return recommendations;
-        } catch (error) {
-            console.error('Error in collaborative recommendations:', error);
+        } catch (error) {            console.error('Error in collaborative recommendations:', error);
             recommendationAnalytics.recordRecommendationGenerated('collaborative', 0, false);
             return [];
         }
-    }    async getContentBasedRecommendations(profile, limit) {
+    }
+
+    async getContentBasedRecommendations(profile, limit, options = {}) {
         try {
             if (!profile.aiProfile.vectors.primary || profile.aiProfile.vectors.primary.length === 0) {
                 return await this.getContentBasedRecommendationsFallback(profile, limit);
@@ -276,7 +309,7 @@ class MLRecommendationEngine {
 
             // Use MongoDB Vector Search for improved performance and relevance
             try {
-                const vectorSearchResults = await this.getContentBasedRecommendationsWithVectorSearch(profile, limit);
+                const vectorSearchResults = await this.getContentBasedRecommendationsWithVectorSearch(profile, limit, options);
                 if (vectorSearchResults && vectorSearchResults.length > 0) {
                     recommendationAnalytics.recordRecommendationGenerated('content', 0, true);
                     return vectorSearchResults;
@@ -291,33 +324,52 @@ class MLRecommendationEngine {
         } catch (error) {
             console.error('Error in content-based recommendations:', error);
             recommendationAnalytics.recordRecommendationGenerated('content', 0, false);
-            return [];
-        }
+            return [];        }
     }
 
-    async getContentBasedRecommendationsWithVectorSearch(profile, limit) {
-        // Use MongoDB Atlas Vector Search aggregation pipeline
-        const pipeline = [
-            {
-                $vectorSearch: {
-                    index: "books_vector_index", // Vector search index name
-                    path: "embeddings.combined",
-                    queryVector: profile.aiProfile.vectors.primary,
-                    numCandidates: limit * 10, // Search more candidates for better results
-                    limit: limit * 3 // Get more results for further filtering
-                }
-            },
-            {
-                $addFields: {
-                    vectorSearchScore: { $meta: "vectorSearchScore" }
-                }
-            },
-            {
-                $match: {
-                    'processing.embeddingsGenerated': true,
-                    vectorSearchScore: { $gte: 0.5 } // Filter by minimum similarity threshold
-                }
-            },
+    async getContentBasedRecommendationsWithVectorSearch(profile, limit, options = {}) {
+        try {
+            // Validate vector dimensions before search
+            if (!profile.aiProfile.vectors.primary || profile.aiProfile.vectors.primary.length !== 384) {
+                console.warn(`Invalid vector dimensions for user profile. Expected 384, got ${profile.aiProfile.vectors.primary?.length || 0}. Falling back to traditional search.`);
+                return await this.getContentBasedRecommendationsFallback(profile, limit);
+            }
+
+            console.log(`Attempting vector search with ${profile.aiProfile.vectors.primary.length}-dimensional vector${options.randomSeed ? ' (with perturbation)' : ''}`);
+
+            // Slightly perturb the query vector during refresh for more variety
+            let queryVector = profile.aiProfile.vectors.primary;
+            if (options.randomSeed) {
+                queryVector = profile.aiProfile.vectors.primary.map(val => {
+                    // Add small random noise (±5%) to each dimension
+                    const noise = (Math.random() - 0.5) * 0.1; // ±5% noise
+                    return val + (val * noise);
+                });
+                console.log('Applied vector perturbation for variety');
+            }
+
+            // Use MongoDB Atlas Vector Search aggregation pipeline
+            const pipeline = [
+                {
+                    $vectorSearch: {
+                        index: "books_vector_index", // Vector search index name
+                        path: "embeddings.combined",
+                        queryVector: queryVector,
+                        numCandidates: options.randomSeed ? limit * 20 : limit * 10, // More candidates for refresh
+                        limit: options.randomSeed ? limit * 8 : limit * 3 // Much more results for randomization
+                    }
+                },
+                {
+                    $addFields: {
+                        vectorSearchScore: { $meta: "vectorSearchScore" }
+                    }
+                },
+                {
+                    $match: {
+                        'processing.embeddingsGenerated': true,
+                        vectorSearchScore: { $gte: 0.5 } // Filter by minimum similarity threshold
+                    }
+                },
             // Boost based on book quality metrics
             {
                 $addFields: {
@@ -327,22 +379,39 @@ class MLRecommendationEngine {
                             { $log10: { $add: [{ $ifNull: ["$stats.viewCount", 1] }, 1] } }
                         ]
                     }
-                }
-            },
-            {
-                $addFields: {
-                    finalScore: {
-                        $add: [
-                            { $multiply: ["$vectorSearchScore", 0.7] },
-                            { $multiply: ["$qualityBoost", 0.1] },
-                            { $divide: [{ $ifNull: ["$dataQuality.completeness", 0.5] }, 10] }
-                        ]
+                }            },                {
+                    $addFields: {
+                        // Add strong randomization factor when refresh is requested
+                        randomFactor: options.randomSeed ? 
+                            { $multiply: [{ $rand: {} }, 0.5] } : // 50% randomization during refresh
+                            0, // No randomization during normal requests
+                        finalScore: options.randomSeed ? 
+                            // During refresh: prioritize randomness while maintaining some relevance
+                            {
+                                $add: [
+                                    { $multiply: ["$vectorSearchScore", 0.4] }, // Reduced relevance weight
+                                    { $multiply: ["$qualityBoost", 0.1] },
+                                    { $multiply: [{ $rand: {} }, 0.5] } // Strong random factor
+                                ]
+                            } :
+                            // Normal request: prioritize relevance
+                            {
+                                $add: [
+                                    { $multiply: ["$vectorSearchScore", 0.7] },
+                                    { $multiply: ["$qualityBoost", 0.1] },
+                                    { $divide: [{ $ifNull: ["$dataQuality.completeness", 0.5] }, 10] }
+                                ]
+                            }
                     }
-                }
-            },
-            {
-                $sort: { finalScore: -1 }
-            },
+                },
+                {
+                    // Use different sorting for refresh vs normal
+                    $sort: options.randomSeed ? 
+                        { finalScore: -1, _id: 1 } : // Add secondary sort for refresh
+                        { finalScore: -1 }
+                },
+                // For refresh, use sample to get truly random results from the candidates
+                ...(options.randomSeed ? [{ $sample: { size: limit * 2 } }] : []),
             {
                 $limit: limit
             },
@@ -361,13 +430,57 @@ class MLRecommendationEngine {
                     embeddings: 1,
                     vectorSearchScore: 1,
                     finalScore: 1
+                }            }
+        ];        const books = await Book.aggregate(pipeline);
+        console.log(`Vector search returned ${books.length} books${options.randomSeed ? ' (with randomization)' : ''}`);
+          // Additional randomization for refresh: shuffle the results
+        if (options.randomSeed && books.length > limit) {
+            console.log('Applying additional shuffle and variety for refresh');
+            
+            // Strategy 1: Ensure variety by selecting from different genres/authors
+            const seenAuthors = new Set();
+            const seenGenres = new Set();
+            const diverseBooks = [];
+            const remainingBooks = [];
+            
+            // First pass: pick books with unique authors/genres
+            for (const book of books) {
+                const author = book.author;
+                const mainGenre = book.genres?.[0];
+                
+                if ((!author || !seenAuthors.has(author)) && 
+                    (!mainGenre || !seenGenres.has(mainGenre)) && 
+                    diverseBooks.length < limit) {
+                    diverseBooks.push(book);
+                    if (author) seenAuthors.add(author);
+                    if (mainGenre) seenGenres.add(mainGenre);
+                } else {
+                    remainingBooks.push(book);
                 }
             }
-        ];
+            
+            // Fill remaining slots with shuffled remaining books
+            for (let i = remainingBooks.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [remainingBooks[i], remainingBooks[j]] = [remainingBooks[j], remainingBooks[i]];
+            }
+            
+            const finalBooks = [...diverseBooks, ...remainingBooks].slice(0, limit);
+            console.log(`Selected ${finalBooks.length} books with diversity (${diverseBooks.length} diverse, ${finalBooks.length - diverseBooks.length} others)`);
+            
+            return finalBooks.map(book => ({
+                book: book,
+                score: book.finalScore || book.vectorSearchScore,
+                confidence: Math.min(book.vectorSearchScore * 1.2, 1.0),
+                factors: ['vector_search', 'embedding_match', 'quality_boost', 'randomization'],
+                similarities: {
+                    vector: book.vectorSearchScore,
+                    quality: book.qualityBoost
+                }
+            }));
+        }
 
-        const books = await Book.aggregate(pipeline);
-
-        return books.map(book => ({
+        return books.slice(0, limit).map(book => ({
             book: book,
             score: book.finalScore || book.vectorSearchScore,
             confidence: Math.min(book.vectorSearchScore * 1.2, 1.0),
@@ -377,6 +490,11 @@ class MLRecommendationEngine {
                 quality: book.qualityBoost
             }
         }));
+        
+        } catch (error) {
+            console.error('Vector search failed, falling back to traditional search:', error.message);
+            return await this.getContentBasedRecommendationsFallback(profile, limit);
+        }
     }
 
     async getContentBasedRecommendationsFallback(profile, limit) {
@@ -440,12 +558,10 @@ class MLRecommendationEngine {
             .slice(0, limit);
 
         return recommendations;
-    }
-
-    async getHybridRecommendations(profile, userBehavior, limit) {
+    }    async getHybridRecommendations(profile, userBehavior, limit, options = {}) {
         try {
             // Combine multiple approaches with dynamic weighting
-            const contentRecs = await this.getContentBasedRecommendations(profile, limit * 2);
+            const contentRecs = await this.getContentBasedRecommendations(profile, limit * 2, options);
             const collabRecs = await this.getCollaborativeRecommendations(profile, userBehavior, limit * 2);
             
             // Weight strategies based on data availability and user behavior
@@ -683,16 +799,21 @@ class MLRecommendationEngine {
         }
         
         return result.sort((a, b) => b.finalScore - a.finalScore);
-    }
-
-    applyDiversityAndNovelty(recommendations, profile, limit) {
+    }    applyDiversityAndNovelty(recommendations, profile, limit, options = {}) {
         // Apply diversity constraints to avoid too many similar books
         const diverseRecs = [];
         const genreCounts = {};
         const authorCounts = {};
         const complexityCounts = { low: 0, medium: 0, high: 0 };
         
-        for (const rec of recommendations) {
+        // If refresh is requested, add some randomization to the input recommendations
+        let workingRecs = recommendations;
+        if (options.refresh) {
+            // Shuffle the recommendations before applying diversity
+            workingRecs = [...recommendations].sort(() => Math.random() - 0.5);
+        }
+        
+        for (const rec of workingRecs) {
             if (diverseRecs.length >= limit) break;
             
             const book = rec.book;
@@ -781,19 +902,111 @@ class MLRecommendationEngine {
         }
         
         return reason.trim() || 'Recommended based on your reading profile.';
-    }    async getColdStartRecommendations(limit) {
+    }    async getColdStartRecommendations(limit, options = {}) {
         // Recommendations for new users with no history
-        // Use the actual database structure (no stats.rating or stats.viewCount)
-        return await Book.find({})
-        .sort({ createdAt: -1 }) // Sort by newest books
-        .limit(limit)
-        .then(books => books.map(book => ({
-            ...book.toObject(),
-            recommendationScore: 0.7, // Default score for cold start
-            reason: 'Popular choice for new readers',
-            confidence: 0.8
-        })));
-    }    async getFallbackRecommendations(limit) {
+        // Use randomization to provide variety instead of always returning the same books
+          try {
+            console.log('=== Cold start recommendations ===');
+            console.log('Cold start recommendations requested, refresh:', !!options.refresh);
+            // Get total count of books
+            const totalBooks = await Book.countDocuments({});
+            console.log('Total books in database:', totalBooks);
+            
+            if (totalBooks === 0) {
+                return [];
+            }
+            
+            // Use multiple strategies for variety:
+            // 1. Recent books (30%)
+            // 2. Random popular books (40%) 
+            // 3. Diverse genre representation (30%)
+            
+            const recentLimit = Math.ceil(limit * 0.3);
+            const randomLimit = Math.ceil(limit * 0.4);
+            const genreLimit = limit - recentLimit - randomLimit;
+            
+            let recommendations = [];
+            
+            // 1. Get some recent books
+            const recentBooks = await Book.find({})
+                .sort({ createdAt: -1 })
+                .limit(recentLimit * 2) // Get more than needed
+                .then(books => {
+                    // Shuffle and take subset for variety
+                    const shuffled = books.sort(() => Math.random() - 0.5);
+                    return shuffled.slice(0, recentLimit);
+                });
+            
+            recommendations.push(...recentBooks.map(book => ({
+                ...book.toObject(),
+                recommendationScore: 0.8,
+                reason: 'Recently added popular choice',
+                confidence: 0.7
+            })));
+            
+            // 2. Get random books using aggregation pipeline
+            if (randomLimit > 0) {
+                const randomBooks = await Book.aggregate([
+                    { $sample: { size: randomLimit } }
+                ]);
+                
+                recommendations.push(...randomBooks.map(book => ({
+                    ...book,
+                    recommendationScore: 0.7,
+                    reason: 'Popular choice for new readers',
+                    confidence: 0.8
+                })));
+            }
+            
+            // 3. Get diverse genre representation
+            if (genreLimit > 0) {
+                const genres = await Book.distinct('genres');
+                const genresPerBook = Math.max(1, Math.floor(genres.length / genreLimit));
+                
+                for (let i = 0; i < genreLimit && i < genres.length; i++) {
+                    const genre = genres[i];
+                    const genreBooks = await Book.aggregate([
+                        { $match: { genres: genre } },
+                        { $sample: { size: 1 } }
+                    ]);
+                    
+                    if (genreBooks.length > 0) {
+                        recommendations.push({
+                            ...genreBooks[0],
+                            recommendationScore: 0.75,
+                            reason: `Great ${genre} choice for exploring new genres`,
+                            confidence: 0.6
+                        });
+                    }
+                }
+            }
+            
+            // Remove duplicates and shuffle final results
+            const uniqueRecommendations = recommendations.filter((book, index, self) => 
+                index === self.findIndex(b => b._id.toString() === book._id.toString())
+            );
+              const shuffledRecommendations = uniqueRecommendations
+                .sort(() => Math.random() - 0.5)
+                .slice(0, limit);
+            
+            console.log('Final cold start recommendations count:', shuffledRecommendations.length);
+            console.log('First book title:', shuffledRecommendations[0]?.title);
+            
+            return shuffledRecommendations;
+            
+        } catch (error) {
+            console.error('Error in cold start recommendations:', error);
+            // Fallback to simple random selection
+            return await Book.aggregate([
+                { $sample: { size: limit } }
+            ]).then(books => books.map(book => ({
+                ...book,
+                recommendationScore: 0.6,
+                reason: 'Popular choice',
+                confidence: 0.5
+            })));
+        }
+    }async getFallbackRecommendations(limit) {
         // Fallback when all other methods fail
         // Use basic queries that work with actual database structure
         return await Book.find({})
@@ -1034,8 +1247,8 @@ const mlEngine = new MLRecommendationEngine();
 const recommendationAnalytics = new RecommendationAnalytics();
 
 // Export the enhanced functions
-const getRecommendedBooks = async (userId, limit = 10) => {
-    return await mlEngine.getRecommendedBooks(userId, limit);
+const getRecommendedBooks = async (userId, limit = 10, options = {}) => {
+    return await mlEngine.getRecommendedBooks(userId, limit, options);
 };
 
 // Enhanced functions with caching integration
@@ -1161,103 +1374,117 @@ const getNewReleasesForUser = async (userId, limit = 5) => {
 };
 
 const getNewReleasesWithVectorSearch = async (profile, limit) => {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    try {
+        // Validate vector dimensions before search
+        if (!profile.aiProfile.vectors.primary || profile.aiProfile.vectors.primary.length !== 384) {
+            console.warn(`Invalid vector dimensions for new releases search. Expected 384, got ${profile.aiProfile.vectors.primary?.length || 0}. Falling back to date-based search.`);
+            return await getNewReleasesFallback(limit);
+        }        // Adjust time ranges based on available data - this database has mostly older books
+        const timeRanges = [
+            { months: 12, label: '1 year' },
+            { months: 24, label: '2 years' },
+            { months: 60, label: '5 years' },
+            { months: 120, label: '10 years' } // Extended range for databases with older books
+        ];
 
-    // Use vector search to find new releases matching user preferences
-    const pipeline = [
-        {
-            $match: {
-                publishDate: { $gte: sixMonthsAgo },
-                'processing.embeddingsGenerated': true,
-                'embeddings.combined': { $exists: true, $ne: [] }
+        // Calculate similarity scores for each recent book
+        const scoredBooks = recentBooks.map(book => {
+            if (!book.embeddings?.combined || book.embeddings.combined.length !== 384) {
+                return null;
             }
-        },
-        {
-            $vectorSearch: {
-                index: "books_vector_index",
-                path: "embeddings.combined",
-                queryVector: profile.aiProfile.vectors.primary,
-                numCandidates: limit * 15,
-                limit: limit * 3
-            }
-        },
-        {
-            $addFields: {
-                vectorSearchScore: { $meta: "vectorSearchScore" }
-            }
-        },
-        {
-            $match: {
-                vectorSearchScore: { $gte: 0.3 } // Lower threshold for new releases
-            }
-        },
-        // Boost newer releases
-        {
-            $addFields: {
-                recencyBoost: {
-                    $divide: [
-                        { $subtract: [new Date(), "$publishDate"] },
-                        1000 * 60 * 60 * 24 * 30 // Convert to months
-                    ]
-                }
-            }
-        },
-        {
-            $addFields: {
-                normalizedRecency: {
-                    $max: [
-                        0,
-                        { $subtract: [1, { $divide: ["$recencyBoost", 6] }] } // Boost books from last 6 months
-                    ]
-                }
-            }
-        },
-        // Calculate final score with recency boost
-        {
-            $addFields: {
-                finalScore: {
-                    $add: [
-                        { $multiply: ["$vectorSearchScore", 0.8] },
-                        { $multiply: ["$normalizedRecency", 0.2] }
-                    ]
-                }
-            }
-        },
-        {
-            $sort: { finalScore: -1, publishDate: -1 }
-        },
-        {
-            $limit: limit
-        },
-        {
-            $project: {
-                title: 1,
-                author: 1,
-                coverUrl: 1,
-                genres: 1,
-                description: 1,
-                stats: 1,
-                publishDate: 1,
-                'aiAnalysis.themes': 1,
-                'aiAnalysis.moodTags': 1,
-                vectorSearchScore: 1,
-                finalScore: 1
-            }
-        }
+
+            const similarity = SimilarityCalculator.calculateCosineSimilarity(
+                profile.aiProfile.vectors.primary,
+                book.embeddings.combined
+            );
+
+            // Calculate recency boost (newer = higher boost)
+            const daysOld = (new Date() - new Date(book.publishDate)) / (1000 * 60 * 60 * 24);
+            const recencyBoost = Math.max(0, 1 - (daysOld / 180)); // 6 months = 180 days
+
+            const finalScore = (similarity * 0.8) + (recencyBoost * 0.2);
+
+            return {
+                ...book,
+                vectorSearchScore: similarity,
+                recencyBoost,
+                finalScore,
+                recommendationScore: finalScore,
+                reason: 'New release matching your interests',
+                searchMethod: 'vector_similarity'
+            };
+        }).filter(Boolean); // Remove null entries
+
+        // Sort by final score and take top results
+        const sortedBooks = scoredBooks
+            .sort((a, b) => b.finalScore - a.finalScore)
+            .slice(0, limit);
+
+        console.log(`Vector similarity for new releases returned ${sortedBooks.length} books`);
+        return sortedBooks;
+        
+    } catch (error) {
+        console.error('Vector search for new releases failed, falling back to date-based search:', error.message);
+        console.log('Using fallback method for new releases');
+        return await getNewReleasesFallback(limit);
+    }
+};
+
+const getNewReleasesFallback = async (limit) => {
+    console.log('Using fallback method for new releases');
+    
+    // Try different time ranges progressively
+    const timeRanges = [
+        { months: 6, label: '6 months' },
+        { months: 12, label: '1 year' },
+        { months: 24, label: '2 years' },
+        { months: 60, label: '5 years' }
     ];
+    
+    for (const range of timeRanges) {
+        const cutoffDate = new Date();
+        cutoffDate.setMonth(cutoffDate.getMonth() - range.months);
+        
+        console.log(`Trying fallback with ${range.label} range (after ${cutoffDate.toISOString()})`);
+        
+        // Simple date-based new releases without vector search
+        const newBooks = await Book.find({
+            publishDate: { $gte: cutoffDate },
+            'processing.embeddingsGenerated': true
+        })
+        .sort({ publishDate: -1, 'stats.rating': -1 })
+        .limit(limit);
 
-    const books = await Book.aggregate(pipeline);
-
-    return books.map(book => ({
-        ...book,
-        recommendationScore: book.finalScore || book.vectorSearchScore,
-        reason: 'New release matching your interests',
-        searchMethod: 'vector_search'
+        console.log(`Found ${newBooks.length} books in ${range.label} range`);
+        
+        if (newBooks.length >= Math.min(limit, 3)) {
+            return newBooks.map(book => ({
+                ...book.toObject(),
+                recommendationScore: 0.7, // Default score for fallback
+                reason: `Recent release (${range.label} - fallback)`,
+                searchMethod: 'date_based'
+            }));
+        }
+    }
+    
+    // If still no books found, get any books with high ratings
+    console.log('No books found in any time range, getting highly rated books');
+    const fallbackBooks = await Book.find({
+        'processing.embeddingsGenerated': true,
+        'stats.rating': { $gte: 4.0 }
+    })
+    .sort({ 'stats.rating': -1, publishDate: -1 })
+    .limit(limit);
+    
+    return fallbackBooks.map(book => ({
+        ...book.toObject(),
+        recommendationScore: 0.6,
+        reason: 'Highly rated book (ultimate fallback)',
+        searchMethod: 'rating_based'
     }));
 };
 
-const getNewReleasesFallback = async (profile, limit, userId) => {
+const getNewReleasesFallbackOld = async (profile, limit, userId) => {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     
@@ -1520,7 +1747,7 @@ const getSimilarBooksFallback = async (book, limit) => {
     }));
 };
 
-const updateUserAIProfile = async (userId) => {
+const updateUserAIProfile = async (userId, preferences = null) => {
     const startTime = Date.now();
     
     try {
@@ -1536,6 +1763,50 @@ const updateUserAIProfile = async (userId) => {
                 console.log(`❌ User ${userId} not found, cannot create profile`);
                 return null;
             }
+        }
+
+        // If preferences are provided, update the profile
+        if (preferences) {
+            console.log(`Updating profile preferences for user ${userId}:`, preferences);
+            
+            // Update preferences based on survey input
+            if (preferences.genres && preferences.genres.length > 0) {
+                profile.preferences.favoriteGenres = preferences.genres;
+            }
+            
+            if (preferences.mood) {
+                // Map mood to reading style preference
+                if (!profile.preferences.readingStyle) {
+                    profile.preferences.readingStyle = {};
+                }
+                profile.preferences.readingStyle.preferredMood = preferences.mood;
+            }
+            
+            if (preferences.time) {
+                // Map time preference to book length preference
+                const timeToLength = {
+                    'quick': 'short',
+                    'medium': 'medium', 
+                    'long': 'long'
+                };
+                if (timeToLength[preferences.time]) {
+                    profile.preferences.preferredLength = timeToLength[preferences.time];
+                }
+            }
+            
+            if (preferences.publicationDate) {
+                if (!profile.preferences.filters) {
+                    profile.preferences.filters = {};
+                }
+                profile.preferences.filters.publicationDate = preferences.publicationDate;
+            }
+            
+            // Mark profile as updated
+            profile.aiProfile.lastUpdated = new Date();
+            profile.aiProfile.needsUpdate = false;
+            
+            await profile.save();
+            console.log(`✅ Profile preferences updated for user ${userId}`);
         }
         
         // Check if update is actually needed

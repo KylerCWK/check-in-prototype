@@ -130,13 +130,17 @@ const getUserId = () => {
 const TEST_USER_ID = '60d5ecb74b24a000154f1234';
 
 // Recommendation API calls
-export const getRecommendations = async (limit = 10) => {
+export const getRecommendations = async (limit = 10, refresh = false) => {
+  const refreshParam = refresh ? '&refresh=true' : '';
+  
   if (isAuthenticated()) {
-    const response = await api.get(`/api/recommendations?limit=${limit}`);
+    const url = `/api/recommendations?limit=${limit}${refreshParam}`;
+    const response = await api.get(url);
     return response.data;
   } else {
     // Fallback to test route in development
-    const response = await api.get(`/api/recommendations/test/${TEST_USER_ID}?limit=${limit}`);
+    const url = `/api/recommendations/test/${TEST_USER_ID}?limit=${limit}${refreshParam}`;
+    const response = await api.get(url);
     return response.data;
   }
 };
@@ -180,8 +184,8 @@ export const getSimilarBooks = async (bookId, limit = 5) => {
   }
 };
 
-export const updateUserAIProfile = async () => {
-  const response = await api.put('/api/recommendations/profile');
+export const updateUserAIProfile = async (preferences = null) => {
+  const response = await api.put('/api/recommendations/profile', { preferences });
   return response.data;
 };
 
@@ -224,6 +228,31 @@ export const trackBookView = async (bookId, viewDuration) => {
   const response = await api.post('/api/tracking/book-view', { 
     bookId, 
     viewDuration 
+  });
+  return response.data;
+};
+
+// Track recommendation interactions
+export const trackRecommendationClick = async (bookId, metadata = {}) => {
+  const response = await api.post('/api/tracking/event', {
+    eventType: 'recommendation_click',
+    bookId,
+    metadata: {
+      action: 'book_click',
+      source: 'dashboard_recommendations',
+      ...metadata
+    }
+  });
+  return response.data;
+};
+
+export const trackRecommendationRefresh = async (metadata = {}) => {
+  const response = await api.post('/api/tracking/event', {
+    eventType: 'recommendation_refresh',
+    metadata: {      action: 'refresh_recommendations',
+      source: 'dashboard',
+      ...metadata
+    }
   });
   return response.data;
 };

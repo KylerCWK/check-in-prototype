@@ -2,14 +2,17 @@
   Interactive Recommendation Controls Component
   Provides intuitive ways to interact with AI recommendations
 -->
-<template>
-  <div class="recommendation-controls">
-    <div class="control-header">
+<template>  <div class="recommendation-controls">
+    <div class="control-header" @click="toggleExpanded">
       <h4>🎯 Fine-tune Your Recommendations</h4>
-      <p>Help our AI learn your preferences better</p>
+      <p v-if="!isCompleted">Help our AI learn your preferences better</p>
+      <p v-else class="completed-message">✅ Preferences updated! Click to modify</p>
+      <button class="expand-toggle" :class="{ expanded: isExpanded }">
+        {{ isExpanded ? '▼' : '▶' }}
+      </button>
     </div>
 
-    <div class="control-sections">
+    <div class="control-sections" v-show="isExpanded">
       <!-- Mood-based Controls -->
       <div class="control-section">
         <h5>📚 What mood are you in?</h5>
@@ -130,6 +133,8 @@ export default {
     }
   },  data() {
     return {
+      isExpanded: true,
+      isCompleted: false,
       selectedMood: null,
       selectedTime: null,
       selectedGenres: [],
@@ -162,14 +167,15 @@ export default {
       ]
     };
   },
-  methods: {
-    selectMood(moodId) {
+  methods: {    selectMood(moodId) {
       this.selectedMood = this.selectedMood === moodId ? null : moodId;
+      this.saveState();
       this.emitPreferences();
     },
     
     selectTime(timeId) {
       this.selectedTime = this.selectedTime === timeId ? null : timeId;
+      this.saveState();
       this.emitPreferences();
     },
       toggleGenre(genre) {
@@ -179,24 +185,32 @@ export default {
       } else {
         this.selectedGenres.push(genre);
       }
+      this.saveState();
       this.emitPreferences();
     },
     
     selectPublicationDate(dateRangeId) {
       this.selectedPublicationDate = this.selectedPublicationDate === dateRangeId ? null : dateRangeId;
+      this.saveState();
       this.emitPreferences();
     },
-    
-    emitPreferences() {
+      emitPreferences() {
       this.$emit('preferences-changed', {
         mood: this.selectedMood,
         time: this.selectedTime,
         genres: [...this.selectedGenres],
-        publicationDate: this.selectedPublicationDate
-      });
+        publicationDate: this.selectedPublicationDate      });
+    },
+
+    toggleExpanded() {
+      this.isExpanded = !this.isExpanded;
+      this.saveState();
     },
     
     getSmartRecommendations() {
+      this.isCompleted = true;
+      this.isExpanded = false; // Collapse after getting recommendations
+      this.saveState();
       this.$emit('smart-recommendations', {
         mood: this.selectedMood,
         time: this.selectedTime,
@@ -206,8 +220,43 @@ export default {
     },
     
     getSurpriseMe() {
+      this.isCompleted = true;
+      this.isExpanded = false; // Collapse after getting recommendations
+      this.saveState();
       this.$emit('surprise-me');
+    },
+
+    saveState() {
+      const state = {
+        isCompleted: this.isCompleted,
+        isExpanded: this.isExpanded,
+        selectedMood: this.selectedMood,
+        selectedTime: this.selectedTime,
+        selectedGenres: this.selectedGenres,
+        selectedPublicationDate: this.selectedPublicationDate
+      };
+      localStorage.setItem('recommendationControlsState', JSON.stringify(state));
+    },
+
+    loadState() {
+      const saved = localStorage.getItem('recommendationControlsState');
+      if (saved) {
+        try {
+          const state = JSON.parse(saved);
+          this.isCompleted = state.isCompleted || false;
+          this.isExpanded = state.isExpanded !== undefined ? state.isExpanded : true;
+          this.selectedMood = state.selectedMood;
+          this.selectedTime = state.selectedTime;
+          this.selectedGenres = state.selectedGenres || [];
+          this.selectedPublicationDate = state.selectedPublicationDate;
+        } catch (error) {
+          console.error('Error loading recommendation controls state:', error);
+        }
+      }
     }
+  },
+  mounted() {
+    this.loadState();
   }
 };
 </script>
@@ -223,8 +272,11 @@ export default {
 }
 
 .control-header {
+  position: relative;
   text-align: center;
   margin-bottom: 2rem;
+  cursor: pointer;
+  user-select: none;
 }
 
 .control-header h4 {
@@ -239,10 +291,42 @@ export default {
   font-size: 0.95rem;
 }
 
+.completed-message {
+  color: #90EE90 !important;
+  font-weight: 500;
+}
+
+.expand-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.expand-toggle:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.expand-toggle.expanded {
+  transform: rotate(0deg);
+}
+
 .control-sections {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  transition: all 0.3s ease;
 }
 
 .control-section {
