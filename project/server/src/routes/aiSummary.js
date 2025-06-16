@@ -1,4 +1,4 @@
-console.log('✅ aiSummary.js loaded');
+// aiSummary.js loaded
 
 const express = require('express');
 const axios = require('axios');

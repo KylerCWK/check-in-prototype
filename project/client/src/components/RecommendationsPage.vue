@@ -316,11 +316,9 @@ export default {
           this.fetchRecommendedBooks(),
           this.fetchBooksYouMayLike(),
           this.fetchNewReleases(),
-          this.fetchNewReleasesYouMayLike()
-        ]);
+          this.fetchNewReleasesYouMayLike()        ]);
         
         this.lastUpdated = new Date();
-        console.log('✅ All recommendations loaded successfully');
       } catch (error) {
         console.error('Error initializing recommendations:', error);
         this.showErrorMessage('Some recommendations could not be loaded. Using fallback content.');
@@ -365,10 +363,9 @@ export default {
       } finally {
         this.loadingStates.daily = false;
       }
-    },async fetchRecommendedBooks(refresh = false) {
+    },    async fetchRecommendedBooks(refresh = false) {
       try {
         this.loadingStates.recommended = true;
-        console.log('🔄 fetchRecommendedBooks called with refresh:', refresh);
         const response = await getRecommendations(10, refresh);
         this.recommendedBooks = response.data;
       } catch (error) {
@@ -430,9 +427,7 @@ export default {
         await trackRecommendationRefresh({
           source: 'recommendations_page',
           action: 'refresh_all',
-          timestamp: new Date().toISOString()
-        });
-        console.log('Tracked recommendation refresh on recommendations page');
+          timestamp: new Date().toISOString()        });
       } catch (error) {
         console.error('Error tracking recommendation refresh on recommendations page:', error);
       }
@@ -468,9 +463,7 @@ export default {
           bookTitle: book.title,
           bookAuthor: book.author,
           source: 'recommendations_page',
-          timestamp: new Date().toISOString()
-        });
-        console.log('Tracked recommendation click on recommendations page for:', book.title);
+          timestamp: new Date().toISOString()        });
       } catch (error) {
         console.error('Error tracking recommendation click on recommendations page:', error);
       }
@@ -573,29 +566,23 @@ export default {
       if (score <= 2) return 'Simple';
       if (score <= 3) return 'Moderate';
       if (score <= 4) return 'Complex';
-      return 'Very Complex';
-    },    
+      return 'Very Complex';    },
+    
     viewAllRecommendations(type) {
       // This could navigate to a filtered view or show more books
-      console.log(`View all ${type} recommendations`);
     },
 
     // Interactive Recommendation Methods
     handlePreferencesChanged(preferences) {
       this.userPreferences = { ...preferences };
-      console.log('User preferences updated:', preferences);
-    },
-
-    async handleSmartRecommendations(preferences) {
+    },    async handleSmartRecommendations(preferences) {
       this.isRefreshing = true;
       try {
-        console.log('Getting smart recommendations with preferences:', preferences);
-          // Update AI profile with new preferences
+        // Update AI profile with new preferences
         await updateUserAIProfile(preferences);
-          // Fetch recommendations based on preferences
+        // Fetch recommendations based on preferences
         if (preferences.mood || preferences.time || preferences.genres.length > 0) {
           // This would be a new API endpoint for contextual recommendations
-          console.log('Fetching contextual recommendations...');
           await this.fetchRecommendedBooks(true); // Refresh after preferences change
           await this.fetchBooksYouMayLike();
         } else {
@@ -611,13 +598,9 @@ export default {
       } finally {
         this.isRefreshing = false;
       }
-    },
-
-    async handleSurpriseMe() {
+    },    async handleSurpriseMe() {
       this.isRefreshing = true;
       try {
-        console.log('Getting surprise recommendations...');
-        
         // Fetch random/diverse recommendations
         const response = await getRecommendations(15);
         const surpriseBooks = response.data
@@ -633,13 +616,12 @@ export default {
       } finally {
         this.isRefreshing = false;
       }
-    },
-
-    showSuccessMessage(message) {
+    },    showSuccessMessage(message) {
       // In a real app, this would show a toast notification
-      console.log('✅', message);
       // You could integrate with a toast library here
-    },    showErrorMessage(message) {
+    },
+    
+    showErrorMessage(message) {
       // In a real app, this would show an error toast
       console.error('❌', message);
       // You could integrate with a toast library here

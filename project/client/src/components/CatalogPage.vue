@@ -318,9 +318,16 @@ export default {
             let aiInsights = parts[1].trim();
             // Remove any leading newlines or formatting
             aiInsights = aiInsights.replace(/^\n+/, '').trim();
-              // Return the full AI insights if they exist and are meaningful
+            
+            // If the AI insights are long, truncate to first few sentences
+            const sentences = aiInsights.split(/[.!?]+/).filter(s => s.trim().length > 10);
+            if (sentences.length > 2) {
+              return sentences.slice(0, 2).join('. ') + '.';
+            }
+            
+            // Return the AI insights if they exist and are meaningful
             if (aiInsights.length > 50) {
-              return aiInsights;
+              return aiInsights.length > 200 ? aiInsights.substring(0, 200) + '...' : aiInsights;
             }
           }
         }
@@ -460,11 +467,9 @@ export default {
     };
 
     const trackView = async (bookId, viewDuration) => {
-      try {
-        // Check if token exists in localStorage before making the API call
+      try {        // Check if token exists in localStorage before making the API call
         const token = localStorage.getItem('token');
         if (!token) {
-          console.log('User is not logged in, skipping view tracking');
           // Still update the UI for a better user experience
           if (viewDuration > 0) {
             const book = books.value.find(b => b._id === bookId);

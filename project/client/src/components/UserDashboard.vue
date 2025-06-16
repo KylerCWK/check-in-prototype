@@ -197,10 +197,8 @@ export default {
 
     async loadRecommendations(refresh = false) {
       this.loadingRecommendations = true;
-      console.log('🔄 loadRecommendations called with refresh:', refresh);
       try {
         const response = await getRecommendations(12, refresh); // Get 12 books, with refresh option
-        console.log('📦 Received recommendations:', response.data?.length || 0, 'books');
         this.allRecommendations = response.data || [];
         this.recommendedBooks = this.allRecommendations; // Keep for compatibility
       } catch (error) {
@@ -219,7 +217,6 @@ export default {
           timestamp: new Date().toISOString(),
           currentRecommendationCount: this.allRecommendations.length
         });
-        console.log('Tracked recommendation refresh');
       } catch (error) {
         console.error('Error tracking recommendation refresh:', error);
       }
@@ -236,7 +233,6 @@ export default {
           source: 'dashboard',
           timestamp: new Date().toISOString()
         });
-        console.log('Tracked view all recommendations');
       } catch (error) {
         console.error('Error tracking view all recommendations:', error);
       }
@@ -255,7 +251,6 @@ export default {
           timestamp: new Date().toISOString(),
           position: this.displayedRecommendedBooks.findIndex(b => b._id === book._id)
         });
-        console.log('Tracked recommendation click for:', book.title);
       } catch (error) {
         console.error('Error tracking recommendation click:', error);
       }

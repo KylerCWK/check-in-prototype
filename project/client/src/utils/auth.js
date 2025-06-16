@@ -47,17 +47,13 @@ export const ensureAuthenticated = async () => {
       const loginResponse = await api.post('/api/auth/login', {
         email: 'demo@bookworm.ai',
         password: 'demo123456'
-      });
-
-      if (loginResponse.data.token) {
+      });      if (loginResponse.data.token) {
         setAuthToken(loginResponse.data.token);
         setUser(loginResponse.data.user);
-        console.log('✅ Demo user logged in successfully');
         return true;
       }
     } catch (loginError) {
       // If login fails, try to register the demo user
-      console.log('🔄 Creating demo user account...');
       
       try {
         await api.post('/api/auth/register', {
@@ -70,12 +66,9 @@ export const ensureAuthenticated = async () => {
         const loginResponse = await api.post('/api/auth/login', {
           email: 'demo@bookworm.ai',
           password: 'demo123456'
-        });
-
-        if (loginResponse.data.token) {
+        });        if (loginResponse.data.token) {
           setAuthToken(loginResponse.data.token);
           setUser(loginResponse.data.user);
-          console.log('✅ Demo user created and logged in successfully');
           return true;
         }
       } catch (registerError) {

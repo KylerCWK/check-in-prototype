@@ -100,31 +100,26 @@ class MLRecommendationEngine {
         this.minInteractionThreshold = 3;
         this.diversityWeight = 0.3;
         this.noveltyWeight = 0.2;
-        this.popularityWeight = 0.1;
-    }    async getRecommendedBooks(userId, limit = 10, options = {}) {        try {            console.log(`=== getRecommendedBooks called ===`);
-            console.log(`userId: ${userId}, limit: ${limit}, refresh: ${!!options.refresh}`);
-            
+        this.popularityWeight = 0.1;    }
+    
+    async getRecommendedBooks(userId, limit = 10, options = {}) {
+        try {
             const user = await User.findById(userId).populate('readingProfile');
-            console.log(`User found: ${!!user}, Has reading profile: ${!!(user && user.readingProfile)}`);
             
             if (!user || !user.readingProfile) {
-                console.log('Using cold start recommendations');
                 return await this.getColdStartRecommendations(limit, options);
             }
 
             const profile = await ReadingProfile.findById(user.readingProfile._id);
             const userBehavior = await UserBehavior.findOne({ userId });            // Check cache first (unless refresh is requested)
-            if (!options.refresh) {
-                const cachedRecommendations = recommendationCache.get(userId, 'recommendedBooks', { limit });
+            if (!options.refresh) {                const cachedRecommendations = recommendationCache.get(userId, 'recommendedBooks', { limit });
                 if (cachedRecommendations) {
-                    console.log('Cache hit for recommended books');
                     recommendationAnalytics.recordCacheHit();
                     return cachedRecommendations;
                 } else {
                     recommendationAnalytics.recordCacheMiss();
                 }
             } else {
-                console.log('Refresh requested - bypassing cache and forcing fresh recommendations');
                 // Clear ALL cache for this user to force fresh recommendations
                 recommendationCache.invalidateUser(userId);
                 
@@ -1422,16 +1417,13 @@ const getNewReleasesWithVectorSearch = async (profile, limit) => {
 
         console.log(`Vector similarity for new releases returned ${sortedBooks.length} books`);
         return sortedBooks;
-        
-    } catch (error) {
-        console.error('Vector search for new releases failed, falling back to date-based search:', error.message);
-        console.log('Using fallback method for new releases');
+          } catch (error) {
+        // Fallback to date-based search if vector search fails
         return await getNewReleasesFallback(limit);
     }
 };
 
 const getNewReleasesFallback = async (limit) => {
-    console.log('Using fallback method for new releases');
     
     // Try different time ranges progressively
     const timeRanges = [

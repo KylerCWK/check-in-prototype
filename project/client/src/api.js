@@ -12,13 +12,11 @@ const getBaseUrl = () => {
 };
 
 // Function to check API availability
-const checkApiAvailability = async (baseUrl) => {
-  try {
+const checkApiAvailability = async (baseUrl) => {  try {
     const response = await axios.get(`${baseUrl}/api/health`, { 
       timeout: 2000,
       headers: { 'Cache-Control': 'no-cache' }
     });
-    console.log('API connection successful:', response.status);
     return true;
   } catch (error) {
     console.warn('API connection check failed:', error.message);
@@ -63,9 +61,7 @@ api.interceptors.response.use(
        !error.response || 
        (error.response && error.response.status >= 500)) && 
       !originalRequest._retry
-    ) {
-      originalRequest._retry = true;
-      console.log('Retrying request due to connection issue:', originalRequest.url);
+    ) {      originalRequest._retry = true;
       
       // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -75,9 +71,7 @@ api.interceptors.response.use(
     // Token expiration
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
-      // Clear token and redirect to login
-      console.log('Session expired, redirecting to login');
+        // Clear token and redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       

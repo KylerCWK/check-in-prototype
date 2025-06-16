@@ -14,10 +14,7 @@ router.get('/', validationChains.recommendations, authMiddleware, async (req, re
     try {
         const userId = req.user.id;
         const limit = parseInt(req.query.limit) || 10;
-        const refresh = req.query.refresh === 'true';
-          console.log('🛣️  Recommendations route called:', { userId, limit, refresh, queryRefresh: req.query.refresh });
-        
-        const recommendations = await aiService.getRecommendedBooks(userId, limit, { refresh });
+        const refresh = req.query.refresh === 'true';        const recommendations = await aiService.getRecommendedBooks(userId, limit, { refresh });
         
         return res.json({
             success: true,
@@ -139,10 +136,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         const preferences = req.body.preferences;
-        
-        console.log(`Updating AI profile for user ${userId} with preferences:`, preferences);
-        
-        const updatedProfile = await aiService.updateUserAIProfile(userId, preferences);
+          const updatedProfile = await aiService.updateUserAIProfile(userId, preferences);
         if (!updatedProfile) {
             return res.status(404).json({
                 success: false,

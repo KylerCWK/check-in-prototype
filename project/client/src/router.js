@@ -36,6 +36,16 @@ const requireGuest = (to, from, next) => {
   }
 };
 
+// Home page guard (redirect authenticated users to dashboard)
+const homeGuard = (to, from, next) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    next('/dashboard');
+  } else {
+    next();
+  }
+};
+
 // Company guard (for INC dashboard access)
 const requireCompany = (to, from, next) => {
   const token = localStorage.getItem('token');
@@ -57,7 +67,7 @@ const requireCompany = (to, from, next) => {
 };
 
 const routes = [
-  { path: '/', component: HomePage },
+  { path: '/', component: HomePage, beforeEnter: homeGuard },
   { path: '/login', component: LoginPage, beforeEnter: requireGuest },
   { path: '/register', component: RegisterPage, beforeEnter: requireGuest },
   { path: '/about', component: AboutPage },
