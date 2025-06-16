@@ -39,16 +39,12 @@ const commonValidations = {
 
   // Email validation
   email: body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-
-  // Password validation (strong password requirements)
+  // Password validation (simplified for usability)
   password: body('password')
-    .isLength({ min: 8, max: 128 })
-    .withMessage('Password must be between 8 and 128 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
-    .withMessage('Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character'),
-
-  // Name validation
-  name: body('name').isLength({ min: 1, max: 100 }).trim().escape()
+    .isLength({ min: 6, max: 128 })
+    .withMessage('Password must be at least 6 characters long'),
+  // Name validation (optional for basic registration)
+  name: body('name').optional().isLength({ min: 1, max: 100 }).trim().escape()
     .withMessage('Name must be between 1 and 100 characters'),
 
   // Company code validation
@@ -57,11 +53,11 @@ const commonValidations = {
 };
 
 // Specific validation chains for different endpoints
-const validationChains = {
-  // Auth validations
+const validationChains = {  // Auth validations
   register: [
     commonValidations.email,
     commonValidations.password,
+    // name and companyCode are optional for basic registration
     commonValidations.name,
     commonValidations.companyCode,
     handleValidationErrors

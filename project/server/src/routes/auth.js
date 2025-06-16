@@ -172,15 +172,9 @@ router.post('/register', validationChains.register, async (req, res) => {
     
     await user.save();
     
-    // Create a reading profile for the new user
+    // Create a reading profile for the new user using the proper method
     try {
-      const readingProfile = new ReadingProfile({ user: user._id });
-      await readingProfile.save();
-      
-      // Link the profile to the user
-      user.readingProfile = readingProfile._id;
-      await user.save();
-      
+      await user.initializeReadingProfile();
       console.log(`✅ Created reading profile for new user ${user._id}`);
     } catch (profileError) {
       console.error('Error creating reading profile for new user:', profileError);

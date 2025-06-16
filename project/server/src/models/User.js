@@ -108,39 +108,6 @@ userSchema.methods.getRecommendations = async function() {
 // Method to initialize reading profile
 userSchema.methods.initializeReadingProfile = async function() {
     const ReadingProfile = mongoose.model('ReadingProfile');
-    const profile = new ReadingProfile({ user: this._id });
-    await profile.save();
-    this.readingProfile = profile._id;
-    await this.save();
-    return profile;
-};
-
-// New method for company affiliations
-userSchema.methods.addCompanyAffiliation = async function(companyId, role = 'member', department = '') {
-    const existing = this.companyAffiliations.find(
-        affiliation => affiliation.company.toString() === companyId.toString()
-    );
-    
-    if (existing) {
-        return existing;
-    }
-    
-    const newAffiliation = {
-        company: companyId,
-        role,
-        department,
-        status: 'pending',
-        isDefault: this.companyAffiliations.length === 0 // First company is default
-    };
-    
-    this.companyAffiliations.push(newAffiliation);
-    await this.save();
-    return newAffiliation;
-};
-
-// Initialize reading profile for user
-userSchema.methods.initializeReadingProfile = async function() {
-    const ReadingProfile = require('./ReadingProfile');
     
     console.log(`Creating reading profile for user: ${this._id}`);
     
@@ -176,6 +143,29 @@ userSchema.methods.initializeReadingProfile = async function() {
     
     console.log(`✅ Reading profile created successfully for user: ${this._id}`);
     return profile;
+};
+
+// New method for company affiliations
+userSchema.methods.addCompanyAffiliation = async function(companyId, role = 'member', department = '') {
+    const existing = this.companyAffiliations.find(
+        affiliation => affiliation.company.toString() === companyId.toString()
+    );
+    
+    if (existing) {
+        return existing;
+    }
+    
+    const newAffiliation = {
+        company: companyId,
+        role,
+        department,
+        status: 'pending',
+        isDefault: this.companyAffiliations.length === 0 // First company is default
+    };
+    
+    this.companyAffiliations.push(newAffiliation);
+    await this.save();
+    return newAffiliation;
 };
 
 // Index for company affiliations

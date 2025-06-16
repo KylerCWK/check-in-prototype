@@ -109,11 +109,11 @@
 
               <div class="ai-tags">
                 <span class="ai-tag">{{ getAiMoodTag(book) }}</span>
-              </div>
-
-              <div class="stats">
+              </div>              <div class="stats">
                 <span><i class="icon">👁️</i> {{ book.stats.viewCount }}</span>
-                <span><i class="icon">⭐</i> {{ book.stats.rating || 'N/A' }}</span>
+                <span class="rating-display" :title="`Rating: ${formatRating(book)}/5.0`">
+                  {{ getStarRating(book) }} {{ formatRating(book) }}
+                </span>
                 <span title="Reading complexity"><i class="icon">📊</i> {{ getComplexityLevel(book) }}</span>
               </div>
             </div>
@@ -158,11 +158,11 @@
                     <span class="ai-tag">{{ getAiMoodTag(book) }}</span>
                     <span class="ai-reading-level">{{ getReadingLevel(book) }}</span>
                   </div>
-                </div>
-
-                <div class="stats">
+                </div>                <div class="stats">
                   <span><i class="icon">👁️</i> {{ book.stats.viewCount }}</span>
-                  <span><i class="icon">⭐</i> {{ book.stats.rating || 'N/A' }}</span>
+                  <span class="rating-display" :title="`Rating: ${formatRating(book)}/5.0`">
+                    {{ getStarRating(book) }} {{ formatRating(book) }}
+                  </span>
                   <span title="Reading complexity"><i class="icon">📊</i> {{ getComplexityLevel(book) }}</span>
                   <span title="Estimated reading time"><i class="icon">⏱️</i> {{ getReadingTime(book) }}</span>
                 </div>
@@ -216,10 +216,11 @@
                     :class="['genre-tag', `genre-color-${index % 5}`]">
                     {{ genre }}
                   </span>
-                </div>
-                <div class="stats">
+                </div>                <div class="stats">
                   <span><i class="icon">👁️</i> {{ selectedBook.stats.viewCount }}</span>
-                  <span><i class="icon">⭐</i> {{ selectedBook.stats.rating || 'N/A' }}</span>
+                  <span class="rating-display" :title="`Rating: ${formatRating(selectedBook)}/5.0`">
+                    {{ getStarRating(selectedBook) }} {{ formatRating(selectedBook) }}
+                  </span>
                   <span title="Reading complexity"><i class="icon">📊</i> {{ getComplexityLevel(selectedBook) }}</span>
                   <span title="Estimated reading time"><i class="icon">⏱️</i> {{ getReadingTime(selectedBook) }}</span>
                 </div>
@@ -395,9 +396,7 @@ export default {
       
       const primaryGenre = book.genres?.[0];
       return genreMoods[primaryGenre] || 'Engaging';
-    };
-
-    const getComplexityLevel = (book) => {
+    };    const getComplexityLevel = (book) => {
       // Use AI complexity score if available
       if (book.aiAnalysis?.complexityScore !== undefined) {
         const score = book.aiAnalysis.complexityScore;
@@ -416,6 +415,33 @@ export default {
       if (hasComplexGenre) return 'Complex';
       if (hasEasyGenre) return 'Easy';
       return 'Moderate';
+    };    const formatRating = (book) => {
+      // Handle multiple possible rating fields
+      const rating = book.stats?.rating || 
+                    book.stats?.averageRating || 
+                    book.rating || 
+                    book.averageRating;
+                    
+      if (!rating || rating === 0) return 'N/A';
+      
+      // Format to 1 decimal place
+      return Number(rating).toFixed(1);
+    };
+
+    const getStarRating = (book) => {
+      // Handle multiple possible rating fields
+      const rating = book.stats?.rating || 
+                    book.stats?.averageRating || 
+                    book.rating || 
+                    book.averageRating;
+                    
+      if (!rating || rating === 0) return '☆☆☆☆☆';
+      
+      const fullStars = Math.floor(rating);
+      const hasHalfStar = rating % 1 >= 0.5;
+      const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+      
+      return '★'.repeat(fullStars) + (hasHalfStar ? '⭐' : '') + '☆'.repeat(emptyStars);
     };
 
     const getReadingLevel = (book) => {
@@ -749,8 +775,7 @@ export default {
       viewMode,
       displayedPages,
       popularTags,
-      searchPlaceholder,
-      debounceSearch,
+      searchPlaceholder,      debounceSearch,
       loadBooks,
       resetFilters,
       handleImageError,
@@ -759,8 +784,9 @@ export default {
       truncateDescription,
       getMainDescription,
       getAiSummary,
-      getAiMoodTag,
-      getComplexityLevel,
+      getAiMoodTag,      getComplexityLevel,
+      formatRating,
+      getStarRating,
       getReadingLevel,
       getDescriptionTypeLabel,
       getReadingTime,
@@ -1300,6 +1326,18 @@ export default {
 
 .stats .icon {
   margin-right: 5px;
+}
+
+.rating-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.rating-display:hover {
+  color: #333;
+  cursor: help;
 }
 
 .pagination {

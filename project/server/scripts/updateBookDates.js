@@ -3,7 +3,7 @@
  * This script updates existing books to have recent publish dates so they appear in "new releases"
  */
 
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: '.env' });
 const mongoose = require('mongoose');
 const Book = require('../src/models/Book');
 
