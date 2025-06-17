@@ -2,13 +2,10 @@
   <div>
     <NavBar />
     <div class="home-container">
-      <h1>Welcome to the QR Code Check-In Prototype</h1>
+      <h1>Welcome to Bookly</h1>
       <p>
-        This is a prototype application for QR Code book check in and check-out with AI  recommendations and API integration.
+        This is an application for AI book recommendations and API integration.
       </p>
-      <router-link to="/qrcode">
-        <button class="btn_primary">Go to QR Code</button>
-      </router-link>
     </div>
   </div>
 </template>
