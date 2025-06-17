@@ -269,3 +269,14 @@ export const recordRecommendationEngagement = async (type) => {
   const response = await api.post('/api/recommendations/engagement', { type });
   return response.data;
 };
+
+// Catalog API calls
+export const getGenres = async () => {
+  const response = await api.get('/api/catalog/genres');
+  return response.data;
+};
+
+export const getCatalogBooks = async (params = {}) => {
+  const response = await api.get('/api/catalog', { params });
+  return response.data;
+};

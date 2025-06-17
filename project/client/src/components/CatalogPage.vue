@@ -254,8 +254,7 @@
 <script>
 import { ref, onMounted, computed, watch } from 'vue';
 import NavBar from './NavBar.vue';
-import axios from 'axios';
-import { trackBookView, addToFavorites as apiAddToFavorites } from '../api';
+import api, { trackBookView, addToFavorites as apiAddToFavorites, getGenres, getCatalogBooks } from '../api';
 
 export default {
   name: 'CatalogPage',
@@ -590,20 +589,18 @@ export default {
       error.value = null;
 
       try {
-        // Using the baseURL from Vite's proxy configuration
-        const response = await axios.get('/api/catalog', {
-          params: {
-            page,
-            limit: 20,
-            genre: selectedGenre.value,
-            search: searchQuery.value,
-            searchBy: searchBy.value,
-            sortBy: sortBy.value
-          }
+        // Using the configured API service function
+        const response = await getCatalogBooks({
+          page,
+          limit: 20,
+          genre: selectedGenre.value,
+          search: searchQuery.value,
+          searchBy: searchBy.value,
+          sortBy: sortBy.value
         });
 
-        books.value = response.data.books;
-        pagination.value = response.data.pagination;
+        books.value = response.books;
+        pagination.value = response.pagination;
         currentPage.value = page;
       } catch (err) {
         console.error('Error loading books:', err);
@@ -616,8 +613,8 @@ export default {
 
     const loadGenres = async () => {
       try {
-        const response = await axios.get('/api/catalog/genres');
-        genres.value = response.data.filter(genre => genre && genre.trim()); // Remove empty genres
+        const genresData = await getGenres();
+        genres.value = genresData.filter(genre => genre && genre.trim()); // Remove empty genres
       } catch (err) {
         console.error('Error loading genres:', err);
         genres.value = [];
