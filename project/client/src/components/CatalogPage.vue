@@ -71,16 +71,6 @@
         </div>
       </div>
 
-      <!-- Debug Info (remove in production) -->
-      <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;">
-        <strong>Debug Info:</strong><br>
-        Books Count: {{ debugInfo.booksCount }}<br>
-        Loading: {{ debugInfo.loading }}<br>
-        Error: {{ debugInfo.error }}<br>
-        Current Page: {{ currentPage }}<br>
-        Pagination: {{ JSON.stringify(debugInfo.pagination) }}
-      </div>
-
       <!-- Loading State -->
       <div v-if="loading" class="loading">
         <div class="loading-spinner"></div>
@@ -295,13 +285,7 @@ export default {
       pages: 0
     });
 
-    // Debug computed property
-    const debugInfo = computed(() => ({
-      booksCount: books.value?.length || 0,
-      loading: loading.value,
-      error: error.value,
-      pagination: pagination.value
-    }));
+  
 
     // Popular tags for quick filtering
     const popularTags = ref([
@@ -792,7 +776,7 @@ export default {
       displayedPages,
       popularTags,
       searchPlaceholder,
-      debugInfo,debounceSearch,
+      debounceSearch,
       loadBooks,
       resetFilters,
       handleImageError,
