@@ -15,8 +15,6 @@ Bookly provides users with access to a large selection of popular books, complet
 
 **⚠️ IMPORTANT: Set environment variables BEFORE running setup!**
 
-See `project/SECURITY_SETUP.md` for detailed instructions.
-
 #### Windows (PowerShell)
 ```powershell
 $env:MONGODB_URI = "your_mongodb_connection_string"
