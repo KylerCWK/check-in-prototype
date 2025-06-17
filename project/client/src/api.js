@@ -2,13 +2,8 @@ import axios from 'axios';
 
 // Determine the base URL
 const getBaseUrl = () => {
-  if (import.meta.env.DEV) {
-    // In development, the empty baseURL allows the proxy to handle /api paths
-    return '';
-  } else {
-    // In production, use the environment variable with fallback to the deployed backend
-    return import.meta.env.VITE_API_BASE_URL || 'https://bookly-6t5b.onrender.com';
-  }
+  // Always use the production backend URL directly to avoid proxy issues
+  return 'https://bookly-6t5b.onrender.com';
 };
 
 // Function to check API availability
