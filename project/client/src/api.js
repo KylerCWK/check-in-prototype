@@ -6,8 +6,8 @@ const getBaseUrl = () => {
     // In development, the empty baseURL allows the proxy to handle /api paths
     return '';
   } else {
-    // In production, use the environment variable or default to a relative path
-    return import.meta.env.VITE_API_BASE_URL || '';
+    // In production, use the environment variable with fallback to the deployed backend
+    return import.meta.env.VITE_API_BASE_URL || 'https://bookly-6t5b.onrender.com';
   }
 };
 
