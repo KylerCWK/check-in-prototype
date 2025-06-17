@@ -260,25 +260,20 @@ export default {
             localStorage.removeItem('currentCompany');
           }
         }
-        
-        try {
-          // Optionally get additional user data including company affiliations
-          const response = await api.get('/api/users/me');
-          const userData = response.data;
-          
-          this.userEmail = userData.email;
-          this.userName = userData.name || userData.email.split('@')[0];
-          
-          // Set company affiliations if available
-          this.companyAffiliations = userData.companyAffiliations || [];
-          
-          // If no current company but user has affiliations, set default
-          if (!this.currentCompany && this.companyAffiliations.length > 0) {
-            const defaultAffiliation = this.companyAffiliations.find(a => a.status === 'approved') || 
-                                     this.companyAffiliations[0];
-            this.currentCompany = defaultAffiliation.company;
-            localStorage.setItem('currentCompany', JSON.stringify(this.currentCompany));
+          try {
+          // For now, use basic info from localStorage since /api/users/me doesn't exist yet
+          const email = localStorage.getItem('userEmail');
+          if (email) {
+            this.userEmail = email;
+            this.userName = email.split('@')[0];
           }
+          
+          // TODO: Implement /api/users/me endpoint on backend for full user data
+          // const response = await api.get('/api/users/me');
+          // const userData = response.data;
+          // this.userEmail = userData.email;
+          // this.userName = userData.name || userData.email.split('@')[0];
+          
         } catch (error) {
           console.error('Error getting user data:', error);
           // Fallback to basic info from localStorage
