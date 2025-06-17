@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-// Determine the base URL - use production server
+// Determine the base URL
 const getBaseUrl = () => {
-  const productionUrl = import.meta.env.VITE_API_BASE_URL || 'https://bookly-6t5b.onrender.com';
-  return productionUrl;
+  // Always use the production backend URL directly to avoid proxy issues
+  return 'https://bookly-6t5b.onrender.com';
 };
 
 // Function to check API availability
