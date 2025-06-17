@@ -2,8 +2,16 @@ import axios from 'axios';
 
 // Determine the base URL
 const getBaseUrl = () => {
-  // Always use the production backend URL directly to avoid proxy issues
-  return 'https://bookly-6t5b.onrender.com';
+  // Always use the production server for now since local server isn't running
+  const productionUrl = import.meta.env.VITE_API_BASE_URL || 'https://bookly-6t5b.onrender.com';
+  return productionUrl;
+  
+  // Original proxy-based logic (commented out):
+  // if (import.meta.env.DEV) {
+  //   return ''; // Use proxy in development
+  // } else {
+  //   return import.meta.env.VITE_API_BASE_URL || 'https://bookly-6t5b.onrender.com';
+  // }
 };
 
 // Function to check API availability
@@ -272,6 +280,11 @@ export const getGenres = async () => {
 };
 
 export const getCatalogBooks = async (params = {}) => {
-  const response = await api.get('/api/catalog', { params });
-  return response.data;
+  try {
+    const response = await api.get('/api/catalog', { params });
+    return response.data;
+  } catch (error) {
+    console.error('getCatalogBooks error:', error);
+    throw error;
+  }
 };

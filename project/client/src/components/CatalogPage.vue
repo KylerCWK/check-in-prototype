@@ -87,6 +87,12 @@
         <p>Loading books...</p>
       </div>
 
+      <!-- Error State -->
+      <div v-else-if="error" class="error-message">
+        <p>{{ error }}</p>
+        <button @click="loadBooks(1)" class="retry-btn">Try Again</button>
+      </div>
+
       <!-- Books Grid or List View -->
       <div v-else-if="books.length" :class="['books-container', viewMode]">
         <!-- Grid View -->
@@ -605,7 +611,6 @@ export default {
       error.value = null;
 
       try {
-        // Using the configured API service function
         const response = await getCatalogBooks({
           page,
           limit: 20,
@@ -615,12 +620,8 @@ export default {
           sortBy: sortBy.value
         });
 
-        console.log('API Response:', response); // Debug log
-        console.log('Books array:', response.books); // Debug log
-        console.log('Books length:', response.books?.length); // Debug log
-
-        books.value = response.books;
-        pagination.value = response.pagination;
+        books.value = response.books || [];
+        pagination.value = response.pagination || { total: 0, page: 1, pages: 0 };
         currentPage.value = page;
       } catch (err) {
         console.error('Error loading books:', err);
