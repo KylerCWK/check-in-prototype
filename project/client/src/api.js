@@ -1,14 +1,18 @@
 import axios from 'axios';
 
-// Determine the base URL - use production server
+// Determine the base URL
 const getBaseUrl = () => {
-  const productionUrl = import.meta.env.VITE_API_BASE_URL || 'https://bookly-6t5b.onrender.com';
-  return productionUrl;
+  if (import.meta.env.DEV) {
+    // In development, the empty baseURL allows the proxy to handle /api paths
+    return '';
+  } else {
+    // In production, use the environment variable with fallback to the deployed backend
+    return import.meta.env.VITE_API_BASE_URL || 'https://bookly-6t5b.onrender.com';
+  }
 };
 
 // Function to check API availability
-const checkApiAvailability = async (baseUrl) => {
-  try {
+const checkApiAvailability = async (baseUrl) => {  try {
     const response = await axios.get(`${baseUrl}/api/health`, { 
       timeout: 2000,
       headers: { 'Cache-Control': 'no-cache' }
@@ -57,8 +61,7 @@ api.interceptors.response.use(
        !error.response || 
        (error.response && error.response.status >= 500)) && 
       !originalRequest._retry
-    ) {
-      originalRequest._retry = true;
+    ) {      originalRequest._retry = true;
       
       // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -68,8 +71,7 @@ api.interceptors.response.use(
     // Token expiration
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
-      // Clear token and redirect to login
+        // Clear token and redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       
@@ -241,8 +243,7 @@ export const trackRecommendationClick = async (bookId, metadata = {}) => {
 export const trackRecommendationRefresh = async (metadata = {}) => {
   const response = await api.post('/api/tracking/event', {
     eventType: 'recommendation_refresh',
-    metadata: {
-      action: 'refresh_recommendations',
+    metadata: {      action: 'refresh_recommendations',
       source: 'dashboard',
       ...metadata
     }
