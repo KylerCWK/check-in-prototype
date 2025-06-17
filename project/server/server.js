@@ -24,17 +24,29 @@ app.use(mongoSanitize(mongoSanitizeConfig));
 app.use(hpp(hppConfig));
 
 // CORS configuration
-if (process.env.NODE_ENV === 'production') {
-  app.use(cors(corsOptions));
-} else {
-  // More permissive CORS for development
-  app.use(cors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'https://bookly-lime.vercel.app'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control']
-  }));
-}
+app.use(cors({
+  origin: [
+    'http://localhost:5173', 
+    'http://127.0.0.1:5173', 
+    'http://localhost:3000', 
+    'https://bookly-lime.vercel.app',
+    'https://bookly-lime.vercel.app/',
+    // Allow all vercel.app subdomains for your deployments
+    /^https:\/\/.*\.vercel\.app$/
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Origin', 'Accept'],
+  exposedHeaders: ['X-Total-Count']
+}));
+
+// Add CORS debugging middleware
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    console.log('CORS preflight request from:', req.headers.origin);
+  }
+  next();
+});
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' })); // Limit payload size
