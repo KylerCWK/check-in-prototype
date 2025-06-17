@@ -57,15 +57,17 @@ mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI, {
   dbName: 'qrlibrary',
   serverSelectionTimeoutMS: 5000, // 5 second timeout
   maxPoolSize: 10, // Maintain up to 10 socket connections
-  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-  bufferMaxEntries: 0 // Disable mongoose buffering
-})
-  .then(() => {
+  socketTimeoutMS: 45000 // Close sockets after 45 seconds of inactivity
+})  .then(() => {
     console.log('Connected to MongoDB (qrlibrary)');
-    console.log('Database URL:', process.env.MONGO_URI ? 'Environment variable found' : 'Using fallback');
+    console.log('Database URL:', process.env.MONGO_URI ? 'Environment variable MONGO_URI found' : 
+                process.env.MONGODB_URI ? 'Environment variable MONGODB_URI found' : 'No database URL found');
+    console.log('Environment:', process.env.NODE_ENV || 'development');
   })
   .catch((err) => {
-    console.error('MongoDB connection error:', err);
+    console.error('MongoDB connection error:', err.message);
+    console.error('Full error:', err);
+    console.error('Please check your database connection string and ensure it\'s properly formatted');
     process.exit(1);
   });
 
