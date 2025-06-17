@@ -10,9 +10,13 @@ const securityConfig = {
     development: {
       origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'https://bookly-lime.vercel.app'],
       credentials: true
-    },
-    production: {
-      origin: process.env.ALLOWED_ORIGINS?.split(',') || ['https://bookly-lime.vercel.app'],
+    },    production: {
+      origin: [
+        'https://bookly-lime.vercel.app',
+        'https://bookly-lime.vercel.app/',
+        'https://*.vercel.app',
+        ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
+      ],
       credentials: true
     }
   },
