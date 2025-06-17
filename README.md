@@ -9,7 +9,7 @@ Bookly provides users with access to a large selection of popular books, complet
 - Node.js (v14 or higher)
 - npm (v6 or higher)
 - MongoDB Atlas account
-- Hugging Face account (for AI features)
+- Hugging Face Access Key (for AI features)
 
 ### Environment Setup (REQUIRED FIRST)
 
