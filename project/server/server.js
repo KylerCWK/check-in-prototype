@@ -29,7 +29,7 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   // More permissive CORS for development
   app.use(cors({
-    origin: true,
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'https://bookly-lime.vercel.app'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control']
