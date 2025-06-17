@@ -66,7 +66,7 @@
 
 <script>
 import NavBar from './NavBar.vue';
-import api from '../api';
+import { register } from '../api';
 export default {
   name: 'SignUpPage',
   components: { NavBar },
@@ -112,12 +112,12 @@ export default {
       }
       this.isSubmitting = true;
       try {
-        const response = await api.post('/api/auth/register', {
+        const response = await register({
           email: this.email,
           password: this.password,
           confirmPassword: this.confirmPassword,
         });
-        this.successMessage = response.data.message;
+        this.successMessage = response.message;
         // Auto-redirect to login page after 2 seconds
         setTimeout(() => {
           this.$router.push('/login');

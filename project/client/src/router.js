@@ -13,6 +13,7 @@ import FavoritesPage from './components/FavoritesPage.vue';
 import RecommendationsPage from './components/RecommendationsPage.vue';
 import INCRegisterPage from './components/INCRegisterPage.vue';
 import INCDashboard from './components/INCDashboard.vue';
+import DebugPage from './components/DebugPage.vue';
 
 // Authentication guard
 const requireAuth = (to, from, next) => {
@@ -73,6 +74,7 @@ const routes = [
   { path: '/about', component: AboutPage },
   { path: '/pricing', component: PricingPage },
   { path: '/api', component: APIPage },
+  { path: '/debug', component: DebugPage },
   { path: '/admin', component: AdminDashboard, beforeEnter: requireAuth },
   { path: '/dashboard', component: UserDashboard, beforeEnter: requireAuth },
   { path: '/catalog', component: CatalogPage, beforeEnter: requireAuth },

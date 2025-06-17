@@ -28,7 +28,9 @@
             <label for="remember">Remember me</label>
           </div>
 
-          <button class="btn_primary login-btn" type="submit">Login</button>
+          <button class="btn_primary login-btn" type="submit" :disabled="isLoading">
+            {{ isLoading ? 'Logging in...' : 'Login' }}
+          </button>
         </form>
         <router-link to="/reset-password" class="lost-password-link">Forgot password?</router-link>
         <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
@@ -39,7 +41,7 @@
 
 <script>
 import NavBar from './NavBar.vue';
-import api from '../api';
+import { login } from '../api';
 
 export default {
   name: 'LoginPage',
@@ -51,25 +53,26 @@ export default {
       remember: false,
       showPassword: false,
       errorMessage: '',
+      isLoading: false,
     };
   },
   methods: {
     async handleLogin() {
       this.errorMessage = '';
+      this.isLoading = true;
+      
       try {
-        const response = await api.post('/api/auth/login', {
-          email: this.username,
-          password: this.password,
-        });
+        console.log('Attempting login...');
+        const response = await login(this.username, this.password);
         
         // Store token in localStorage
-        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('token', response.token);
         // Store email for personalization (temporary solution)
         localStorage.setItem('userEmail', this.username);
         
         // Store company information if user is associated with a company
-        if (response.data.user.company) {
-          localStorage.setItem('currentCompany', JSON.stringify(response.data.user.company));
+        if (response.user.company) {
+          localStorage.setItem('currentCompany', JSON.stringify(response.user.company));
         }
         
         // Dispatch a custom event to notify components that login was successful
@@ -80,7 +83,7 @@ export default {
         
         if (!redirect) {
           // If user is associated with a company, redirect to INC dashboard
-          if (response.data.user.company) {
+          if (response.user.company) {
             redirect = '/inc/dashboard';
           } else {
             redirect = '/dashboard';
@@ -92,11 +95,21 @@ export default {
         // Login successful - redirect to the appropriate dashboard
         this.$router.push(redirect);
       } catch (err) {
+        console.error('Login error caught:', err);
+        
         if (err.response?.status === 401) {
           this.errorMessage = 'Invalid email or password.';
+        } else if (err.response?.status === 404) {
+          this.errorMessage = 'Login service unavailable. Please check your connection and try again.';
+        } else if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+          this.errorMessage = 'Connection timeout. Please check your internet connection.';
+        } else if (err.message.includes('Network Error') || !err.response) {
+          this.errorMessage = 'Network error. Please check your connection and try again.';
         } else {
-          this.errorMessage = 'An error occurred during login. Please try again later.';
+          this.errorMessage = err.response?.data?.message || 'An error occurred during login. Please try again later.';
         }
+      } finally {
+        this.isLoading = false;
       }
     },
   },

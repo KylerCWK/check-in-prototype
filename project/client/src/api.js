@@ -2,16 +2,18 @@ import axios from 'axios';
 
 // Determine the base URL
 const getBaseUrl = () => {
-  // Always use the production server for now since local server isn't running
-  const productionUrl = import.meta.env.VITE_API_BASE_URL || 'https://bookly-6t5b.onrender.com';
-  return productionUrl;
+  // Check if we're in development
+  const isDev = import.meta.env.DEV;
   
-  // Original proxy-based logic (commented out):
-  // if (import.meta.env.DEV) {
-  //   return ''; // Use proxy in development
-  // } else {
-  //   return import.meta.env.VITE_API_BASE_URL || 'https://bookly-6t5b.onrender.com';
-  // }
+  // Use environment variable if available
+  if (import.meta.env.VITE_API_BASE_URL) {
+    console.log('Using API URL from environment:', import.meta.env.VITE_API_BASE_URL);
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // Default to production server
+  console.log('Using default API URL:', 'https://bookly-6t5b.onrender.com');
+  return 'https://bookly-6t5b.onrender.com';
 };
 
 // Function to check API availability
@@ -285,6 +287,45 @@ export const getCatalogBooks = async (params = {}) => {
     return response.data;
   } catch (error) {
     console.error('getCatalogBooks error:', error);
+    throw error;
+  }
+};
+
+// Authentication API calls
+export const login = async (email, password) => {
+  try {
+    console.log('Attempting login to:', api.defaults.baseURL + '/api/auth/login');
+    const response = await api.post('/api/auth/login', { email, password });
+    console.log('Login successful:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Login error details:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      url: error.config?.url,
+      baseURL: error.config?.baseURL
+    });
+    throw error;
+  }
+};
+
+export const register = async (userData) => {
+  try {
+    const response = await api.post('/api/auth/register', userData);
+    return response.data;
+  } catch (error) {
+    console.error('Register error:', error);
+    throw error;
+  }
+};
+
+export const logout = async () => {
+  try {
+    const response = await api.post('/api/auth/logout');
+    return response.data;
+  } catch (error) {
+    console.error('Logout error:', error);
     throw error;
   }
 };
