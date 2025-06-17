@@ -132,7 +132,7 @@ const authRoutes = require('./src/routes/auth');
 app.use('/api/auth', rateLimits.auth, authRoutes);
 
 // Mount user routes
-const userRoutes = require('./src/routes/users');
+const userRoutes = require('./src/routes/users-simple');
 app.use('/api/users', userRoutes);
 
 // Mount catalog routes with search rate limiting
