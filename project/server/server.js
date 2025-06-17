@@ -53,11 +53,30 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 }));
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, { dbName: 'qrlibrary' })
-  .then(() => console.log('Connected to MongoDB (qrlibrary)'))
-  .catch((err) => console.error(err));
+mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI, { 
+  dbName: 'qrlibrary',
+  serverSelectionTimeoutMS: 5000, // 5 second timeout
+  maxPoolSize: 10, // Maintain up to 10 socket connections
+  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+  bufferMaxEntries: 0 // Disable mongoose buffering
+})
+  .then(() => {
+    console.log('Connected to MongoDB (qrlibrary)');
+    console.log('Database URL:', process.env.MONGO_URI ? 'Environment variable found' : 'Using fallback');
+  })
+  .catch((err) => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
 
-app.get('/', (req, res) => res.send('Hello from backend!'));
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'Backend server is running!',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0'
+  });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -109,6 +128,10 @@ const startServer = (port) => {
 // Mount auth routes with stricter rate limiting
 const authRoutes = require('./src/routes/auth');
 app.use('/api/auth', rateLimits.auth, authRoutes);
+
+// Mount user routes
+const userRoutes = require('./src/routes/users');
+app.use('/api/users', userRoutes);
 
 // Mount catalog routes with search rate limiting
 const catalogRoutes = require('./src/routes/catalog');
