@@ -71,6 +71,16 @@
         </div>
       </div>
 
+      <!-- Debug Info (remove in production) -->
+      <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;">
+        <strong>Debug Info:</strong><br>
+        Books Count: {{ debugInfo.booksCount }}<br>
+        Loading: {{ debugInfo.loading }}<br>
+        Error: {{ debugInfo.error }}<br>
+        Current Page: {{ currentPage }}<br>
+        Pagination: {{ JSON.stringify(debugInfo.pagination) }}
+      </div>
+
       <!-- Loading State -->
       <div v-if="loading" class="loading">
         <div class="loading-spinner"></div>
@@ -170,11 +180,11 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- No Results -->
+      </div>      <!-- No Results -->
       <div v-else class="no-results">
-        <p>No books found matching your search.</p>
+        <p v-if="error">{{ error }}</p>
+        <p v-else>No books found matching your search.</p>
+        <p><small>Debug: Books array length: {{ books.length }}, Loading: {{ loading }}, Error: {{ error }}</small></p>
         <button @click="resetFilters" class="reset-btn">Reset Filters</button>
       </div>
 
@@ -278,6 +288,14 @@ export default {
       page: 1,
       pages: 0
     });
+
+    // Debug computed property
+    const debugInfo = computed(() => ({
+      booksCount: books.value?.length || 0,
+      loading: loading.value,
+      error: error.value,
+      pagination: pagination.value
+    }));
 
     // Popular tags for quick filtering
     const popularTags = ref([
@@ -582,9 +600,7 @@ export default {
       sortBy.value = 'popular';
       updateSearchPlaceholder();
       loadBooks(1);
-    };
-
-    const loadBooks = async (page) => {
+    };    const loadBooks = async (page) => {
       loading.value = true;
       error.value = null;
 
@@ -598,6 +614,10 @@ export default {
           searchBy: searchBy.value,
           sortBy: sortBy.value
         });
+
+        console.log('API Response:', response); // Debug log
+        console.log('Books array:', response.books); // Debug log
+        console.log('Books length:', response.books?.length); // Debug log
 
         books.value = response.books;
         pagination.value = response.pagination;
@@ -756,9 +776,7 @@ export default {
       }
       
       return fullDescription;
-    };
-
-    return {
+    };    return {
       books,
       genres,
       loading,
@@ -772,7 +790,8 @@ export default {
       viewMode,
       displayedPages,
       popularTags,
-      searchPlaceholder,      debounceSearch,
+      searchPlaceholder,
+      debugInfo,debounceSearch,
       loadBooks,
       resetFilters,
       handleImageError,
